@@ -1,0 +1,20 @@
+dataset:
+  dir_data: "C:/Users/happy/Documents/jupyter scripts/SRraw/sr_paul/data/SRRAW"
+  patch_size: 64
+  
+dataloader:
+    batch_size: 8
+    shuffle: True
+    num_workers: 4
+
+model:
+  in_channels: 3
+  work_channels: 128           # all the layer work on the same channel number
+  filter_size: 64
+  iteration_steps: 12          # iteration step number should be same as the length of st_schedule
+  mode: "embedded"             # 'gaussian', 'embedded', 'concatenate'
+  st_schedule: "aaaahhhhtttt"  # 'a' means affine, 'h' for homography, 't' for tps
+  tps_grid_size: 4
+
+trainer:
+  gpus: 1
