@@ -12,9 +12,9 @@ model:
   work_channels: 128           # all the layer work on the same channel number
   filter_size: 64
   iteration_steps: 12          # iteration step number should be same as the length of st_schedule
-  mode: "embedded"             # 'gaussian', 'embedded', 'concatenate'
+  mode: "embedded"             # 'gaussian', 'embedded'(dot), 'concatenate'
   st_schedule: "aaaahhhhtttt"  # 'a' means affine, 'h' for homography, 't' for tps
   tps_grid_size: 4
 
-trainer:
+trainer:                       # TODO main trainer lightning module params
   gpus: 1
