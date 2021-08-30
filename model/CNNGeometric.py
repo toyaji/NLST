@@ -15,7 +15,7 @@ def featureL2Norm(feature):
     return torch.div(feature,norm)
 
 class FeatureExtraction(torch.nn.Module):
-    def __init__(self, train_fe=False, feature_extraction_cnn='vgg', normalization=True, last_layer='', use_cuda=True):
+    def __init__(self, train_fe=False, feature_extraction_cnn='vgg', normalization=True, last_layer=''):
         super(FeatureExtraction, self).__init__()
         self.normalization = normalization
         if feature_extraction_cnn == 'vgg':
@@ -67,9 +67,6 @@ class FeatureExtraction(torch.nn.Module):
             # freeze parameters
             for param in self.model.parameters():
                 param.requires_grad = False
-        # move to GPU
-        if use_cuda:
-            self.model = self.model.cuda()
         
     def forward(self, image_batch):
         features = self.model(image_batch)
@@ -117,7 +114,7 @@ class FeatureCorrelation(torch.nn.Module):
             return torch.cat((feature_A,feature_B),1)
 
 class FeatureRegression(nn.Module):
-    def __init__(self, output_dim=6, use_cuda=True, batch_normalization=True, kernel_sizes=[7,5,5], channels=[225,128,64]):
+    def __init__(self, output_dim=6, batch_normalization=True, kernel_sizes=[7,5,5], channels=[225,128,64]):
         super(FeatureRegression, self).__init__()
         num_layers = len(kernel_sizes)
         nn_modules = list()
@@ -131,9 +128,6 @@ class FeatureRegression(nn.Module):
             nn_modules.append(nn.ReLU(inplace=True))
         self.conv = nn.Sequential(*nn_modules)        
         self.linear = nn.Linear(ch_out * kernel_sizes[-1] * kernel_sizes[-1], output_dim)
-        if use_cuda:
-            self.conv.cuda()
-            self.linear.cuda()
 
     def forward(self, x):
         x = self.conv(x)
@@ -154,13 +148,11 @@ class CNNGeometric(nn.Module):
                  normalize_matches=True, 
                  batch_normalization=True, 
                  train_fe=False,
-                 use_cuda=True,
                  matching_type='correlation'):
 #                 regressor_channels_1 = 128,
 #                 regressor_channels_2 = 64):
         
         super(CNNGeometric, self).__init__()
-        self.use_cuda = use_cuda
         self.feature_self_matching = feature_self_matching
         self.normalize_features = normalize_features
         self.normalize_matches = normalize_matches
@@ -168,14 +160,12 @@ class CNNGeometric(nn.Module):
         self.FeatureExtraction = FeatureExtraction(train_fe=train_fe,
                                                    feature_extraction_cnn=feature_extraction_cnn,
                                                    last_layer=feature_extraction_last_layer,
-                                                   normalization=normalize_features,
-                                                   use_cuda=self.use_cuda)
+                                                   normalization=normalize_features,)
         
         self.FeatureCorrelation = FeatureCorrelation(shape='3D',normalization=normalize_matches,matching_type=matching_type)        
         
 
         self.FeatureRegression = FeatureRegression(output_dim,
-                                                   use_cuda=self.use_cuda,
                                                    kernel_sizes=fr_kernel_sizes,
                                                    channels=fr_channels,
                                                    batch_normalization=batch_normalization)

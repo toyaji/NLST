@@ -1,13 +1,10 @@
 import argparse
 import sys
-from pathlib import Path
-from pprint import pformat
-
 import yaml
 from easydict import EasyDict
 
 
-def load_config(config_file, write_log=True):
+def load_config(config_file):
     with open(config_file, "r") as f:
         config = yaml.load(f, yaml.FullLoader)
         config = EasyDict(config)

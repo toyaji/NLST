@@ -9,19 +9,19 @@ class NLST(nn.Module):
     def __init__(self, 
                  in_channels, 
                  work_channels, 
-                 filter_size=64, 
-                 steps=12, 
+                 filter_size=64,
+                 iteration_steps=12, 
                  mode='embedded',
                  st_schedule="aaaahhhhtttt",
                  tps_grid_size=4):
         """
         """
         super(NLST, self).__init__()
-        assert len(st_schedule) == steps, \
+        assert len(st_schedule) == iteration_steps, \
             "Trnasofrm scheduel shoul have same length of iteration step number."      
         
         # params set
-        self.steps = steps
+        self.steps = iteration_steps
         self.corr = None
         self.schedule = st_schedule
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     # following code is for test
     import torch
 
-    img = torch.zeros(2, 3, 64, 64).cuda()
-    net = NLST(3, 128).cuda()
+    img = torch.zeros(2, 3, 64, 64)
+    net = NLST(3, 128)
     out = net(img)
     print(out.size())
