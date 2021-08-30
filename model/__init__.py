@@ -47,7 +47,7 @@ class LitModel(pl.LightningModule):
         loss = F.mse_loss(sr, y)
         self.train_psnr(sr, y)
         self.train_ssim(sr, y)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         self.log('train_psnr', self.train_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         self.log('train_ssim', self.train_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss
@@ -64,7 +64,7 @@ class LitModel(pl.LightningModule):
         loss = F.mse_loss(sr, y)
         self.valid_psnr(sr, y)
         self.valid_ssim(sr, y)
-        self.log('valid_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('valid_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         self.log('valid_psnr', self.valid_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         self.log('valid_ssim', self.valid_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss
