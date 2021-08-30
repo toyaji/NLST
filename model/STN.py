@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F 
 from model.transformation import AffineGridGen, HomographyGridGen, TpsGridGen
 
+
 # for test import
 #from transformation import AffineGridGen, HomographyGridGen, TpsGridGen
 
@@ -124,6 +125,6 @@ if __name__ == '__main__':
     import torch
 
     img = torch.zeros(2, 128, 64, 64).cuda()
-    net = SpatialTransformer(128, 64, 3, 'tps', 9).cuda()
+    net = SpatialTransformer(128, 64, 3, 'hom', 9).cuda()
     rois, affine_grid_points = net(img)
     print("rois found to be of size:{}".format(rois.size()))

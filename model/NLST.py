@@ -51,7 +51,7 @@ class NLST(nn.Module):
         x = self.front(x)
         
         for tr in self.schedule:
-            x, self.corr = self.rb(x, self.corr)
+            x = self.rb(x)
             if tr == "a":
                 x, _ = self.affine(x)
             elif tr == "h":

@@ -1,3 +1,7 @@
+log:
+  name: '20210830'
+  version: 'test_1'
+
 dataset:
   dir_data: "C:/Users/happy/Documents/jupyter scripts/SRraw/sr_paul/data/SRRAW"
   scale_idx: [1, 2]            # scale index (ex. 00001, 00002, 00003). First will be ref(target) 
@@ -12,7 +16,6 @@ dataloader:
 model:
   in_channels: 3               # input image channel number, 3 for JPG, 4 for ARW
   work_channels: 128           # all the layer work on the same channel number
-  #out_channels: 3
   filter_size: 64              # inpute filter size will be maintained along network 
   iteration_steps: 12          # iteration step number should be same as the length of st_schedule
   mode: "embedded"             # 'gaussian', 'embedded'(dot), 'concatenate'
@@ -20,6 +23,9 @@ model:
   tps_grid_size: 4
 
 trainer:                       # TODO main trainer lightning module params
-  accumulate_grad_batches: 4
+  gpus: 1
+  max_epochs: 10
+  accumulate_grad_batches: 5
   check_val_every_n_epoch: 1
   gradient_clip_val: 0.5
+  log_every_n_steps: 10

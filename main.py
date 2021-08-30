@@ -1,6 +1,7 @@
 import warnings
 from pathlib import Path
 
+import torch
 from torch.utils.data.dataset import random_split
 from torchviz import make_dot
 from pytorch_lightning import Trainer
@@ -27,14 +28,9 @@ def main(config):
     model.set_dataset(train_set, val_set, test_set)
 
     # instantiate trainer
-    logger = TensorBoardLogger('logs/', 'first_attemps')
-    trainer = Trainer(gpus=1,
-                      max_epochs=2,
-                      progress_bar_refresh_rate=1, 
-                      logger=logger, 
-                      log_every_n_steps=1,
-                      gradient_clip_val=0.5,
-                      )
+    logger = TensorBoardLogger('logs/', log_graph=True, **config.log)
+    logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
+    trainer = Trainer(logger=logger, **config.trainer)
     
     # start training!
     trainer.fit(model)

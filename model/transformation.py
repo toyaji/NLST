@@ -146,7 +146,7 @@ class HomographyGridGen(Module):
         # create grid in numpy
         # self.grid = np.zeros( [self.out_h, self.out_w, 3], dtype=np.float32)
         # sampling grid with dim-0 coords (Y)
-        self.grid_X,self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
+        self.grid_X, self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
         # grid_X,grid_Y: size [1,H,W,1,1]
         self.grid_X = torch.FloatTensor(self.grid_X).unsqueeze(0).unsqueeze(3)
         self.grid_Y = torch.FloatTensor(self.grid_Y).unsqueeze(0).unsqueeze(3)
@@ -169,9 +169,14 @@ class HomographyGridGen(Module):
         h7=H[:,7].unsqueeze(1).unsqueeze(2).unsqueeze(3)
         h8=H[:,8].unsqueeze(1).unsqueeze(2).unsqueeze(3)
         
+        # load on device using type_as
+        self.grid_X = self.grid_X.type_as(H)
+        self.grid_Y = self.grid_Y.type_as(H)
+
         grid_X = expand_dim(self.grid_X,0,b)
         grid_Y = expand_dim(self.grid_Y,0,b)
-
+        # FIXME 여기서 requires grad false  인 애들이 cuda 로 안가서 에러남
+        # print(grid_X.is_cuda, h0.is_cuda, grid_Y.is_cuda, h1.is_cuda, h2.is_cuda)
         grid_Xp = grid_X*h0+grid_Y*h1+h2
         grid_Yp = grid_X*h3+grid_Y*h4+h5
         k = grid_X*h6+grid_Y*h7+h8
@@ -194,7 +199,14 @@ def homography_mat_from_4_pts(theta):
     z = Variable(torch.zeros(4)).unsqueeze(1).unsqueeze(0).expand(b,4,1)
     o = Variable(torch.ones(4)).unsqueeze(1).unsqueeze(0).expand(b,4,1)
     single_o = Variable(torch.ones(1)).unsqueeze(1).unsqueeze(0).expand(b,1,1)
-    
+
+    # load params as input
+    x = x.type_as(theta)
+    y = y.type_as(theta)
+    z = z.type_as(theta)
+    o = o.type_as(theta)
+    single_o = single_o.type_as(theta)
+
     A=torch.cat([torch.cat([-x,-y,-o,z,z,z,x*xp,y*xp,xp],2),
                  torch.cat([z,z,z,-x,-y,-o,x*yp,y*yp,yp],2)],1)
     # find homography by assuming h33 = 1 and inverting the linear system
@@ -215,7 +227,7 @@ class TpsGridGen(Module):
         # create grid in numpy
         # self.grid = np.zeros( [self.out_h, self.out_w, 3], dtype=np.float32)
         # sampling grid with dim-0 coords (Y)
-        self.grid_X,self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
+        self.grid_X, self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
         # grid_X,grid_Y: size [1,H,W,1,1]
         self.grid_X = torch.FloatTensor(self.grid_X).unsqueeze(0).unsqueeze(3)
         self.grid_Y = torch.FloatTensor(self.grid_Y).unsqueeze(0).unsqueeze(3)
@@ -238,6 +250,10 @@ class TpsGridGen(Module):
             self.P_Y = Variable(self.P_Y,requires_grad=False)
             
     def forward(self, theta):
+        # load on device using type_as
+        self.grid_X = self.grid_X.type_as(theta)
+        self.grid_Y = self.grid_Y.type_as(theta)
+
         warped_grid = self.apply_transformation(theta,torch.cat((self.grid_X,self.grid_Y),3))
         
         return warped_grid
@@ -283,6 +299,11 @@ class TpsGridGen(Module):
         P_X = self.P_X.expand((1,points_h,points_w,1,self.N))
         P_Y = self.P_Y.expand((1,points_h,points_w,1,self.N))
         
+        # load the created params on device as sams as input theta
+        P_X = P_X.type_as(theta)
+        P_Y = P_Y.type_as(theta)
+        self.Li = self.Li.type_as(theta)
+
         # compute weigths for non-linear part
         W_X = torch.bmm(self.Li[:,:self.N,:self.N].expand((batch_size,self.N,self.N)),Q_X)
         W_Y = torch.bmm(self.Li[:,:self.N,:self.N].expand((batch_size,self.N,self.N)),Q_Y)

@@ -2,7 +2,7 @@ import torch
 import pytorch_lightning as pl
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-from torchmetrics import MetricCollection
+from torchmetrics import MetricCollection, metric
 from torchmetrics.image import PSNR, SSIM
 
 from model.NLST import NLST
@@ -20,8 +20,15 @@ class LitModel(pl.LightningModule):
         self.shuffle = loader_params.shuffle
 
         # set metrices to evaluate performence
-        self.train_metrics = PSNR() # FIXME MetricCollection([PSNR(), SSIM()])
-        self.valid_metrics = MetricCollection([PSNR(), SSIM()])
+        # TODO 다른 metrics 추가해야함... 모듈 만들던지 해서
+        psnr = PSNR(); ssim = SSIM()
+        self.train_psnr = psnr.clone()
+        self.train_ssim = ssim.clone()
+        self.valid_psnr = psnr.clone()
+        self.valid_ssim = ssim.clone()
+
+    def forward(self, x):
+        return self.model(x)
 
     def configure_optimizers(self):
         # TODO params 분리되 되는듯... 여기다가 앞에 CNN gep 붙이는거 붙여되 되겠네
@@ -38,9 +45,11 @@ class LitModel(pl.LightningModule):
 
         sr = self.model(x)
         loss = F.mse_loss(sr, y)
-        self.train_metrics(sr, y)
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_metrics', self.train_metrics, on_epoch=True, prog_bar=True, logger=True)
+        self.train_psnr(sr, y)
+        self.train_ssim(sr, y)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('train_psnr', self.train_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('train_ssim', self.train_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -53,11 +62,13 @@ class LitModel(pl.LightningModule):
 
         sr = self.model(x)
         loss = F.mse_loss(sr, y)
-        self.valid_metrics(sr, y)
-        self.log('valid_loss', loss, on_epoch=True, prog_bar=True, logger=True)
-        self.log('valid_metrics', self.train_metrics, on_epoch=True, prog_bar=True, logger=True)
+        self.valid_psnr(sr, y)
+        self.valid_ssim(sr, y)
+        self.log('valid_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('valid_psnr', self.valid_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('valid_ssim', self.valid_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss
-
+    
     def set_dataset(self, train_set, val_set, test_set):
         self.train_set = train_set
         self.val_set = val_set
