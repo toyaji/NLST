@@ -99,7 +99,8 @@ def readFocal_pil(image_path, focal_code=37386):
     try:
         img = Image.open(image_path)
     except:
-        raise ErrorReport("Can't open image!")
+        print(image_path)
+        return None
     exif_data = img._getexif()
     img.close()
     return float(exif_data[focal_code])
