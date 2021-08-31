@@ -23,29 +23,26 @@ class GeometricTnf(object):
     ( can be used with no transformation to perform bilinear resizing )        
     
     """
-    def __init__(self, geometric_model='affine', tps_grid_size=3, tps_reg_factor=0, out_h=240, out_w=240, offset_factor=None, use_cuda=True):
+    def __init__(self, geometric_model='affine', tps_grid_size=3, tps_reg_factor=0, out_h=240, out_w=240, offset_factor=None):
         self.out_h = out_h
         self.out_w = out_w
         self.geometric_model = geometric_model
-        self.use_cuda = use_cuda
         self.offset_factor = offset_factor
         
         if geometric_model=='affine' and offset_factor is None:
             self.gridGen = AffineGridGen(out_h=out_h, out_w=out_w)
         elif geometric_model=='affine' and offset_factor is not None:
-            self.gridGen = AffineGridGenV2(out_h=out_h, out_w=out_w, use_cuda=use_cuda)
+            self.gridGen = AffineGridGenV2(out_h=out_h, out_w=out_w)
         elif geometric_model=='hom':
-            self.gridGen = HomographyGridGen(out_h=out_h, out_w=out_w, use_cuda=use_cuda)
+            self.gridGen = HomographyGridGen(out_h=out_h, out_w=out_w)
         elif geometric_model=='tps':
             self.gridGen = TpsGridGen(out_h=out_h, out_w=out_w, grid_size=tps_grid_size, 
-                                      reg_factor=tps_reg_factor, use_cuda=use_cuda)
+                                      reg_factor=tps_reg_factor)
         if offset_factor is not None:
             self.gridGen.grid_X=self.gridGen.grid_X/offset_factor
             self.gridGen.grid_Y=self.gridGen.grid_Y/offset_factor   
             
         self.theta_identity = torch.Tensor(np.expand_dims(np.array([[1,0,0],[0,1,0]]),0).astype(np.float32))
-        if use_cuda:
-            self.theta_identity = self.theta_identity.cuda()
 
     def __call__(self, image_batch, theta_batch=None, out_h=None, out_w=None, return_warped_image=True, return_sampling_grid=False, padding_factor=1.0, crop_factor=1.0):
         if image_batch is None:
@@ -62,9 +59,9 @@ class GeometricTnf(object):
             if self.geometric_model=='affine':
                 gridGen = AffineGridGen(out_h, out_w)
             elif self.geometric_model=='hom':
-                gridGen = HomographyGridGen(out_h, out_w, use_cuda=self.use_cuda)
+                gridGen = HomographyGridGen(out_h, out_w)
             elif self.geometric_model=='tps':
-                gridGen = TpsGridGen(out_h, out_w, use_cuda=self.use_cuda)
+                gridGen = TpsGridGen(out_h, out_w)
         else:
             gridGen = self.gridGen
         
@@ -107,10 +104,9 @@ class AffineGridGen(Module):
         return F.affine_grid(theta, out_size)
     
 class AffineGridGenV2(Module):
-    def __init__(self, out_h=240, out_w=240, use_cuda=True):
+    def __init__(self, out_h=240, out_w=240):
         super(AffineGridGenV2, self).__init__()        
         self.out_h, self.out_w = out_h, out_w
-        self.use_cuda = use_cuda
 
         # create grid in numpy
         # self.grid = np.zeros( [self.out_h, self.out_w, 3], dtype=np.float32)
@@ -121,9 +117,6 @@ class AffineGridGenV2(Module):
         self.grid_Y = torch.FloatTensor(self.grid_Y).unsqueeze(0).unsqueeze(3)
         self.grid_X = Variable(self.grid_X,requires_grad=False)
         self.grid_Y = Variable(self.grid_Y,requires_grad=False)
-        if use_cuda:
-            self.grid_X = self.grid_X.cuda()
-            self.grid_Y = self.grid_Y.cuda()
             
     def forward(self, theta):
         b=theta.size(0)
@@ -146,23 +139,19 @@ class AffineGridGenV2(Module):
         return torch.cat((grid_Xp,grid_Yp),3)
 
 class HomographyGridGen(Module):
-    def __init__(self, out_h=240, out_w=240, use_cuda=True):
+    def __init__(self, out_h=240, out_w=240):
         super(HomographyGridGen, self).__init__()        
         self.out_h, self.out_w = out_h, out_w
-        self.use_cuda = use_cuda
 
         # create grid in numpy
         # self.grid = np.zeros( [self.out_h, self.out_w, 3], dtype=np.float32)
         # sampling grid with dim-0 coords (Y)
-        self.grid_X,self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
+        self.grid_X, self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
         # grid_X,grid_Y: size [1,H,W,1,1]
         self.grid_X = torch.FloatTensor(self.grid_X).unsqueeze(0).unsqueeze(3)
         self.grid_Y = torch.FloatTensor(self.grid_Y).unsqueeze(0).unsqueeze(3)
         self.grid_X = Variable(self.grid_X,requires_grad=False)
         self.grid_Y = Variable(self.grid_Y,requires_grad=False)
-        if use_cuda:
-            self.grid_X = self.grid_X.cuda()
-            self.grid_Y = self.grid_Y.cuda()
             
     def forward(self, theta):
         b=theta.size(0)
@@ -180,9 +169,14 @@ class HomographyGridGen(Module):
         h7=H[:,7].unsqueeze(1).unsqueeze(2).unsqueeze(3)
         h8=H[:,8].unsqueeze(1).unsqueeze(2).unsqueeze(3)
         
-        grid_X = expand_dim(self.grid_X,0,b);
-        grid_Y = expand_dim(self.grid_Y,0,b);
+        # load on device using type_as
+        self.grid_X = self.grid_X.type_as(H)
+        self.grid_Y = self.grid_Y.type_as(H)
 
+        grid_X = expand_dim(self.grid_X,0,b)
+        grid_Y = expand_dim(self.grid_Y,0,b)
+        # FIXME 여기서 requires grad false  인 애들이 cuda 로 안가서 에러남
+        # print(grid_X.is_cuda, h0.is_cuda, grid_Y.is_cuda, h1.is_cuda, h2.is_cuda)
         grid_Xp = grid_X*h0+grid_Y*h1+h2
         grid_Yp = grid_X*h3+grid_Y*h4+h5
         k = grid_X*h6+grid_Y*h7+h8
@@ -205,16 +199,16 @@ def homography_mat_from_4_pts(theta):
     z = Variable(torch.zeros(4)).unsqueeze(1).unsqueeze(0).expand(b,4,1)
     o = Variable(torch.ones(4)).unsqueeze(1).unsqueeze(0).expand(b,4,1)
     single_o = Variable(torch.ones(1)).unsqueeze(1).unsqueeze(0).expand(b,1,1)
-    
-    if theta.is_cuda:
-        x = x.cuda()
-        y = y.cuda()
-        z = z.cuda()
-        o = o.cuda()
-        single_o = single_o.cuda()
 
+    # load params as input
+    x = x.type_as(theta)
+    y = y.type_as(theta)
+    z = z.type_as(theta)
+    o = o.type_as(theta)
+    single_o = single_o.type_as(theta)
 
-    A=torch.cat([torch.cat([-x,-y,-o,z,z,z,x*xp,y*xp,xp],2),torch.cat([z,z,z,-x,-y,-o,x*yp,y*yp,yp],2)],1)
+    A=torch.cat([torch.cat([-x,-y,-o,z,z,z,x*xp,y*xp,xp],2),
+                 torch.cat([z,z,z,-x,-y,-o,x*yp,y*yp,yp],2)],1)
     # find homography by assuming h33 = 1 and inverting the linear system
     h=torch.bmm(torch.inverse(A[:,:,:8]),-A[:,:,8].unsqueeze(2))
     # add h33
@@ -225,24 +219,20 @@ def homography_mat_from_4_pts(theta):
     return H
 
 class TpsGridGen(Module):
-    def __init__(self, out_h=240, out_w=240, use_regular_grid=True, grid_size=3, reg_factor=0, use_cuda=True):
+    def __init__(self, out_h=240, out_w=240, use_regular_grid=True, grid_size=3, reg_factor=0):
         super(TpsGridGen, self).__init__()
         self.out_h, self.out_w = out_h, out_w
         self.reg_factor = reg_factor
-        self.use_cuda = use_cuda
 
         # create grid in numpy
         # self.grid = np.zeros( [self.out_h, self.out_w, 3], dtype=np.float32)
         # sampling grid with dim-0 coords (Y)
-        self.grid_X,self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
+        self.grid_X, self.grid_Y = np.meshgrid(np.linspace(-1,1,out_w),np.linspace(-1,1,out_h))
         # grid_X,grid_Y: size [1,H,W,1,1]
         self.grid_X = torch.FloatTensor(self.grid_X).unsqueeze(0).unsqueeze(3)
         self.grid_Y = torch.FloatTensor(self.grid_Y).unsqueeze(0).unsqueeze(3)
         self.grid_X = Variable(self.grid_X,requires_grad=False)
         self.grid_Y = Variable(self.grid_Y,requires_grad=False)
-        if use_cuda:
-            self.grid_X = self.grid_X.cuda()
-            self.grid_Y = self.grid_Y.cuda()
 
         # initialize regular grid for control points P_i
         if use_regular_grid:
@@ -258,12 +248,12 @@ class TpsGridGen(Module):
             self.P_Y = P_Y.unsqueeze(2).unsqueeze(3).unsqueeze(4).transpose(0,4)
             self.P_X = Variable(self.P_X,requires_grad=False)
             self.P_Y = Variable(self.P_Y,requires_grad=False)
-            if use_cuda:
-                self.P_X = self.P_X.cuda()
-                self.P_Y = self.P_Y.cuda()
-
             
     def forward(self, theta):
+        # load on device using type_as
+        self.grid_X = self.grid_X.type_as(theta)
+        self.grid_Y = self.grid_Y.type_as(theta)
+
         warped_grid = self.apply_transformation(theta,torch.cat((self.grid_X,self.grid_Y),3))
         
         return warped_grid
@@ -284,8 +274,7 @@ class TpsGridGen(Module):
         P = torch.cat((O,X,Y),1)
         L = torch.cat((torch.cat((K,P),1),torch.cat((P.transpose(0,1),Z),1)),0)
         Li = torch.inverse(L)
-        if self.use_cuda:
-            Li = Li.cuda()
+
         return Li
         
     def apply_transformation(self,theta,points):
@@ -310,6 +299,11 @@ class TpsGridGen(Module):
         P_X = self.P_X.expand((1,points_h,points_w,1,self.N))
         P_Y = self.P_Y.expand((1,points_h,points_w,1,self.N))
         
+        # load the created params on device as sams as input theta
+        P_X = P_X.type_as(theta)
+        P_Y = P_Y.type_as(theta)
+        self.Li = self.Li.type_as(theta)
+
         # compute weigths for non-linear part
         W_X = torch.bmm(self.Li[:,:self.N,:self.N].expand((batch_size,self.N,self.N)),Q_X)
         W_Y = torch.bmm(self.Li[:,:self.N,:self.N].expand((batch_size,self.N,self.N)),Q_Y)

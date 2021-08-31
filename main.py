@@ -1,7 +1,9 @@
 import warnings
 from pathlib import Path
 
+import torch
 from torch.utils.data.dataset import random_split
+from torchviz import make_dot
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -15,9 +17,6 @@ warnings.filterwarnings('ignore')
 def main(config):
 
     # dataset settting
-    base = Path('./data/SRRAW/')
-    assert base.exists()
-
     train_set = ZoomLZoomData(config.dataset, train=True)
     test_set = ZoomLZoomData(config.dataset, train=False)
 
@@ -29,15 +28,15 @@ def main(config):
     model.set_dataset(train_set, val_set, test_set)
 
     # instantiate trainer
-    logger = TensorBoardLogger('logs/', 'SRraw_by_Paul')
-    trainer = Trainer(gpus=1,
-                      max_epochs=2,
-                      progress_bar_refresh_rate=1, 
-                      logger=logger, log_every_n_steps=1)
+    logger = TensorBoardLogger('logs/', log_graph=True, **config.log)
+    logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
+    trainer = Trainer(logger=logger, **config.trainer)
     
     # start training!
     trainer.fit(model)
 
-
+    
 if __name__ == "__main__":
-    main()
+    from options import load_config
+    config = load_config("config/first_test.yaml")
+    main(config)

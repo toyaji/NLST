@@ -22,13 +22,14 @@ class NLRN(nn.Module):
         )
 
         self.steps = steps
+        self.corr = None
 
     def forward(self, x):
         skip = x
         x = self.front(x)
         
         for _ in range(self.steps):
-            x = self.rb(x)
+            x, self.corr = self.rb(x, self.corr)
 
         x = self.tail(x)
         return x + skip
@@ -38,10 +39,13 @@ class ResidualBlcok(nn.Module):
     def __init__(self, in_channels, mode) -> None:
         super(ResidualBlcok, self).__init__()
 
-        self.block = nn.Sequential(
+        self.front = nn.Sequential(
                 nn.BatchNorm2d(in_channels),
-                nn.ReLU(),
-                NLBlockND(in_channels, mode=mode),
+                nn.ReLU())
+
+        self.body = NLBlockND(in_channels, mode=mode)
+                
+        self.tail = nn.Sequential(
                 nn.BatchNorm2d(in_channels),
                 nn.Conv2d(in_channels, in_channels, 3, padding=1),
                 nn.BatchNorm2d(in_channels),
@@ -49,11 +53,13 @@ class ResidualBlcok(nn.Module):
                 nn.Conv2d(in_channels, in_channels, 3, padding=1)
                 )
     
-    def forward(self, x):
+    def forward(self, x, corr):
         skip = x
-        x = self.block(x)
+        x = self.front(x)
+        x, corr = self.body(x, corr)
+        x = self.tail(x)
         x += skip
-        return x
+        return x, corr
 
 
 class NLBlockND(nn.Module):
@@ -108,7 +114,7 @@ class NLBlockND(nn.Module):
                     nn.ReLU()
                 )
             
-    def forward(self, x):
+    def forward(self, x, corr):
         """
         args
             x: (N, C, H, W)
@@ -145,6 +151,10 @@ class NLBlockND(nn.Module):
             f = self.W_f(concat)
             f = f.view(f.size(0), f.size(2), f.size(3))
 
+        # we need to iteratively flow the correlation
+        if corr is not None:
+            f += corr
+
         if self.mode == "gaussian" or self.mode == "embedded":
             f_div_C = F.softmax(f, dim=-1)
         elif self.mode == "dot" or self.mode == "concatenate":
@@ -161,13 +171,14 @@ class NLBlockND(nn.Module):
         # residual connection
         z = W_y + x
 
-        return z
+        return z, f
 
 
 
 if __name__ == '__main__':
     # following code is for test
     import torch
+    import torchsummary
 
     for bn_layer in [True, False]:
 

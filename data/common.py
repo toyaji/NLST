@@ -1,5 +1,5 @@
 import random
-
+import rawpy
 import numpy as np
 import skimage.color as sc
 from PIL import Image
@@ -103,3 +103,45 @@ def readFocal_pil(image_path, focal_code=37386):
     exif_data = img._getexif()
     img.close()
     return float(exif_data[focal_code])
+
+def crop_fov(image, ratio, buffer=1.):
+    width, height = image.shape[:2]
+    new_width = width * ratio * buffer
+    new_height = height * ratio * buffer
+    left = np.ceil((width - new_width)/2.)
+    top = np.ceil((height - new_height)/2.)
+    right = np.floor((width + new_width)/2.)
+    bottom = np.floor((height + new_height)/2.)
+    # print("Cropping boundary: ", top, bottom, left, right)
+    cropped = image[int(left):int(right), int(top):int(bottom), ...]
+    return cropped
+
+# zoom-learn-zoom/utils.py
+def get_bayer(path, black_lv=512, white_lv=16383):
+    if isinstance(path, str) or isinstance(path, Path):
+        raw = rawpy.imread(str(path))
+    else:
+        raw = path
+    bayer = raw.raw_image_visible.astype(np.float32)
+    bayer = (bayer - black_lv) / (white_lv - black_lv)  # subtract the black level
+    return bayer
+
+def get_4ch(bayer):
+    h, w = bayer.shape[:2]
+    rgba = np.zeros((h // 2, w // 2, 4), dtype=np.float32)
+    rgba[:, :, 0] = bayer[0::2, 0::2]  # R
+    rgba[:, :, 1] = bayer[1::2, 0::2]  # G1
+    rgba[:, :, 2] = bayer[1::2, 1::2]  # B
+    rgba[:, :, 3] = bayer[0::2, 1::2]  # G2
+
+    return rgba
+
+def get_1ch(raw):
+    h, w = raw.shape[:2]
+    bayer = np.zeros((h * 2, w * 2), dtype=raw.dtype)
+    bayer[0::2, 0::2] = raw[..., 0]
+    bayer[1::2, 0::2] = raw[..., 1]
+    bayer[1::2, 1::2] = raw[..., 2]
+    bayer[0::2, 1::2] = raw[..., 3]
+
+    return bayer
