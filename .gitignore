@@ -1,5 +1,9 @@
+# Log files
 /lightning_logs
 /logs
+
+# Dataset
+/dataset
 
 # Test files
 test.*
