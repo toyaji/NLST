@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch
 from torch.utils.data.dataset import random_split
-from torchviz import make_dot
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
