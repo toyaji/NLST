@@ -9,7 +9,7 @@ dataset:
   raw_image: False             # if True, belowing in_channel param sould be 4
 
 dataloader:
-    batch_size: 2
+    batch_size: 4
     shuffle: True
     num_workers: 4
 
@@ -24,7 +24,7 @@ model:
 
 trainer:                       # TODO main trainer lightning module params
   gpus: 1
-  max_epochs: 10
+  max_epochs: 100
   accumulate_grad_batches: 5
   check_val_every_n_epoch: 1
   gradient_clip_val: 0.5
