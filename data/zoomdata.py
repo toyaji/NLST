@@ -16,13 +16,19 @@ class ZoomLZoomData(Dataset):
         super().__init__()
         self.patch_size = args.patch_size
         self.scale_idx = args.scale_idx
+        self.get_from_dir = args.get_from_dir
+        self.img_ext = args.img_ext
         self.train = train
         self._set_filesystem(args.dir_data)
 
     def __getitem__(self, idx):
         lrs = self._scan(idx, self.scale_idx)
         hr = lrs.pop(0)
-        hrs, lrs = common.get_random_patches(hr, lrs, self.patch_size)
+        # get patch or just give full size image
+        if self.patch_size == -1:
+            hrs = [hr] * len(lrs)
+        else:
+            hrs, lrs = common.get_random_patches(hr, lrs, self.patch_size)
         hrs = torch.stack(common.np2Tensor(hrs, 255)) # size -> (6, 3, H, W)
         lrs = torch.stack(common.np2Tensor(lrs, 255))
         return hrs, lrs
@@ -39,9 +45,8 @@ class ZoomLZoomData(Dataset):
             self.base_paths = sorted(list((self.apath / "test").glob("*")))
     
     def _scan(self, idx, scale_idx=[1, 2]):
-        # FIXME 일단 align 된 JPG 로 하고 그 다음에 JPG align 하면서 되나 보고, 최종 ARW 로 align 하면서 되나 보기
-        base_path = self.base_paths[idx] / "aligned"
-        imgs_path = [base_path / "{:05d}.JPG".format(i) for i in scale_idx]
+        base_path = self.base_paths[idx] / self.get_from_dir
+        imgs_path = [base_path / "{:05d}.{}".format(i, self.img_ext) for i in scale_idx]
         lrs = [cv2.imread(str(path)) for path in imgs_path]
         return lrs
 

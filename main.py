@@ -7,7 +7,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from model import LitModel
+from model import LitModel, WarpModel
 from data.zoomdata import ZoomLZoomData
 
 warnings.filterwarnings('ignore')
@@ -22,13 +22,12 @@ def main(config):
     length = [round(len(train_set)*0.8), round(len(train_set)*0.2)]
     train_set, val_set = random_split(train_set, length)
 
-    # load pytorch lightning model
-    model = LitModel(config.model, config.dataloader)
+    # load pytorch lightning model - TODO 요 부분 argparser 로 모델명 받게하기
+    model = WarpModel(config.model, config.dataloader)
     model.set_dataset(train_set, val_set, test_set)
 
     # instantiate trainer
-    logger = TensorBoardLogger('logs/', log_graph=True, **config.log)
-    logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
+    logger = TensorBoardLogger('logs/', **config.log)
     trainer = Trainer(logger=logger, **config.trainer)
     
     # start training!
@@ -37,5 +36,5 @@ def main(config):
     
 if __name__ == "__main__":
     from options import load_config
-    config = load_config("config/first_test.yaml")
+    config = load_config("config/warpnet_template.yaml")
     main(config)

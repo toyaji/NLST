@@ -16,27 +16,41 @@ def expand_dim(tensor,dim,desired_dim_len):
     return tensor.expand(tuple(sz))
 
 
-class GeometricTnf(object):
+class GeometricTnf(Module):
     """
     
     Geometric transfromation to an image batch (wrapped in a PyTorch Variable)
     ( can be used with no transformation to perform bilinear resizing )        
     
     """
-    def __init__(self, geometric_model='affine', tps_grid_size=3, tps_reg_factor=0, out_h=240, out_w=240, offset_factor=None):
-        self.out_h = out_h
-        self.out_w = out_w
+    def __init__(self, 
+                 geometric_model='affine', 
+                 tps_grid_size=3, 
+                 tps_reg_factor=0, 
+                 size=240, 
+                 offset_factor=None, 
+                 padding_factor=1.0, 
+                 crop_factor=1.0):
+
+        super().__init__()
+        if isinstance(size, int):
+            self.out_h, self.out_w = size, size
+        elif isinstance(size, tuple):
+            self.out_h, self.out_w = size 
+
         self.geometric_model = geometric_model
         self.offset_factor = offset_factor
+        self.padding_factor = padding_factor
+        self.crop_factor = crop_factor
         
         if geometric_model=='affine' and offset_factor is None:
-            self.gridGen = AffineGridGen(out_h=out_h, out_w=out_w)
+            self.gridGen = AffineGridGen(out_h=self.out_h, out_w=self.out_w)
         elif geometric_model=='affine' and offset_factor is not None:
-            self.gridGen = AffineGridGenV2(out_h=out_h, out_w=out_w)
+            self.gridGen = AffineGridGenV2(out_h=self.out_h, out_w=self.out_w)
         elif geometric_model=='hom':
-            self.gridGen = HomographyGridGen(out_h=out_h, out_w=out_w)
+            self.gridGen = HomographyGridGen(out_h=self.out_h, out_w=self.out_w)
         elif geometric_model=='tps':
-            self.gridGen = TpsGridGen(out_h=out_h, out_w=out_w, grid_size=tps_grid_size, 
+            self.gridGen = TpsGridGen(out_h=self.out_h, out_w=self.out_w, grid_size=tps_grid_size, 
                                       reg_factor=tps_reg_factor)
         if offset_factor is not None:
             self.gridGen.grid_X=self.gridGen.grid_X/offset_factor
@@ -44,48 +58,21 @@ class GeometricTnf(object):
             
         self.theta_identity = torch.Tensor(np.expand_dims(np.array([[1,0,0],[0,1,0]]),0).astype(np.float32))
 
-    def __call__(self, image_batch, theta_batch=None, out_h=None, out_w=None, return_warped_image=True, return_sampling_grid=False, padding_factor=1.0, crop_factor=1.0):
-        if image_batch is None:
-            b=1
-        else:
-            b=image_batch.size(0)
-        if theta_batch is None:
-            theta_batch = self.theta_identity
-            theta_batch = theta_batch.expand(b,2,3).contiguous()
-            theta_batch = Variable(theta_batch,requires_grad=False)        
-        
-        # check if output dimensions have been specified at call time and have changed
-        if (out_h is not None and out_w is not None) and (out_h!=self.out_h or out_w!=self.out_w):
-            if self.geometric_model=='affine':
-                gridGen = AffineGridGen(out_h, out_w)
-            elif self.geometric_model=='hom':
-                gridGen = HomographyGridGen(out_h, out_w)
-            elif self.geometric_model=='tps':
-                gridGen = TpsGridGen(out_h, out_w)
-        else:
-            gridGen = self.gridGen
-        
-        sampling_grid = gridGen(theta_batch)
+    def forward(self, x, theta=None):
+        b, c, h, w = x.size()
+        if theta is None:
+            theta = self.theta_identity
+            theta = theta.expand(b,2,3).contiguous()
+        grid = self.gridGen(theta)
 
         # rescale grid according to crop_factor and padding_factor
-        if padding_factor != 1 or crop_factor !=1:
-            sampling_grid = sampling_grid*(padding_factor*crop_factor)
+        if self.padding_factor != 1 or self.crop_factor !=1:
+            grid = grid*(self.padding_factor*self.crop_factor)
         # rescale grid according to offset_factor
         if self.offset_factor is not None:
-            sampling_grid = sampling_grid*self.offset_factor
-        
-        if return_sampling_grid and not return_warped_image:
-            return sampling_grid
-        
-        # sample transformed image
-        warped_image_batch = F.grid_sample(image_batch, sampling_grid)
-        
-        if return_sampling_grid and return_warped_image:
-            return (warped_image_batch,sampling_grid)
-        
-        return warped_image_batch
+            grid = grid*self.offset_factor
 
-
+        return F.grid_sample(x, grid, align_corners=True)
 
 class AffineGridGen(Module):
     def __init__(self, out_h=240, out_w=240, out_ch = 3):
@@ -101,7 +88,7 @@ class AffineGridGen(Module):
         theta = theta.contiguous()
         batch_size = theta.size()[0]
         out_size = torch.Size((batch_size,self.out_ch,self.out_h,self.out_w))
-        return F.affine_grid(theta, out_size)
+        return F.affine_grid(theta, out_size, align_corners=True)
     
 class AffineGridGenV2(Module):
     def __init__(self, out_h=240, out_w=240):
