@@ -19,20 +19,20 @@ def get_identical_patches(imgs, patch_size):
         imgs.append(imgs[i][iy:iy + tp, ix:ix + tp, :])
     return imgs
 
+def get_random_patch(hr, lr, patch_size):
+    ih, iw = hr.shape[:2]
+    tp = patch_size
+    ix = np.random.randint(0, iw - patch_size)
+    iy = np.random.randint(0, ih - patch_size)
+    hr = hr[iy:iy + tp, ix:ix + tp, :]
+    lr = lr[iy:iy + tp, ix:ix + tp, :]
+    return hr, lr
+        
 def get_random_patches(hr, lrs, patch_size):
-    """Get patches of different random fov for each scale of image"""
-    def _get_random_patch(hr, lr, patch_size):
-        ih, iw = hr.shape[:2]
-        tp = patch_size
-        ix = np.random.randint(0, iw - patch_size)
-        iy = np.random.randint(0, ih - patch_size)
-        hr = hr[iy:iy + tp, ix:ix + tp, :]
-        lr = lr[iy:iy + tp, ix:ix + tp, :]
-        return hr, lr
-    
+    """Get patches of different random fov for each scale of image"""   
     hrs = []
     for i, lr in enumerate(lrs):
-        h, l = _get_random_patch(hr, lr, patch_size)
+        h, l = get_random_patch(hr, lr, patch_size)
         hrs.append(h)
         lrs[i] = l
     return hrs, lrs
