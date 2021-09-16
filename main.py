@@ -20,7 +20,7 @@ def main(config):
     dm = LitDataset(**config.dataset)
 
     # load pytorch lightning model - TODO 요 부분 argparser 로 모델명 받게하기
-    model = LitModel(config.model)
+    model = LitModel(config.model, config.optimizer)
 
     # instantiate trainer
     logger = TensorBoardLogger('logs/', log_graph=True, **config.log)

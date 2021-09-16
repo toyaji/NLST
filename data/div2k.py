@@ -7,19 +7,20 @@ from torch.utils.data import Dataset
 
 
 class DIV2K(Dataset):
-    def __init__(self, data_dir, scale_idx, patch_size, train=True):
-        super().__init__()
+    def __init__(self, dir, scale_idx, patch_size, train=True, **kargs):
         self.patch_size = patch_size
         self.scale_idx = scale_idx
         self.train = train
-        self._set_filesystem(data_dir)
+        self._set_filesystem(dir)
 
     def __getitem__(self, idx):
+        
         hr = cv2.imread(str(self.hr_pathes[idx]))
         lr =cv2.imread(str(self.lr_pathes[idx]))
         hr = cv2.cvtColor(hr, cv2.COLOR_BGR2RGB)    
         lr = cv2.cvtColor(lr, cv2.COLOR_BGR2RGB)
-
+        h, w, _ = hr.shape
+        lr = cv2.resize(lr, dsize=(w, h), interpolation=cv2.INTER_LINEAR)
         if self.patch_size == -1:
             pass
         else:
