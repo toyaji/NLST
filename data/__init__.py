@@ -5,7 +5,7 @@ from torch.utils.data.dataset import random_split
 from typing import Optional
 
 from .div2k import DIV2K
-from .zoomdata import Z, ZoomLZoomData
+from .zoomdata import ZoomLZoomData
 
 class LitDataset(LightningDataModule):
     def __init__(self,
@@ -31,7 +31,7 @@ class LitDataset(LightningDataModule):
         self.shuffle = shuffle
         self.num_workers = num_workers
 
-        self.save_hyperparameters()
+        #self.save_hyperparameters()
 
     def setup(self, stage: Optional[str]=None) -> None:
         if self.data == 'div':

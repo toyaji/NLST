@@ -42,6 +42,6 @@ class DIV2K(Dataset):
             self.dir_hr = self.apath / 'HR' / 'valid_HR'
             self.dir_lr = self.apath / 'LR_bicubic' / 'DIV2K_valid_LR_bicubic'
 
-        self.hr_pathes = self.dir_hr.glob("*")
-        self.lr_pathes = (self.dir_lr / "X{:1d}".format(self.scale_idx)).glob("*")
+        self.hr_pathes = list(self.dir_hr.glob("*"))
+        self.lr_pathes = list((self.dir_lr / "X{:1d}".format(self.scale_idx)).glob("*"))
     
