@@ -31,4 +31,4 @@ trainer:                       # TODO main trainer lightning module params
 
 optimizer:
   learning_rate: 1.0e-5
-  weight_decay: 1.0e-2
+  weight_decay: 1.0e-3
