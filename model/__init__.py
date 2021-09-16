@@ -24,6 +24,8 @@ class LitModel(pl.LightningModule):
         self.train_ssim = SSIM()
         self.valid_psnr = PSNR()
         self.valid_ssim = SSIM()
+        self.test_psnr = PSNR()
+        self.test_ssim = SSIM()
         
         # save hprams for log
         self.save_hyperparameters(model_params)
@@ -37,7 +39,7 @@ class LitModel(pl.LightningModule):
         optimazier = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         lr_scheduler = {
             'scheduler': ReduceLROnPlateau(optimazier, patience=7),
-            'monitor': "val_loss",
+            'monitor': "valid_loss",
             'name': 'leraning_rate'
         }
         return [optimazier], [lr_scheduler]
@@ -74,4 +76,21 @@ class LitModel(pl.LightningModule):
         self.log('valid_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         self.log('valid_psnr', self.valid_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         self.log('valid_ssim', self.valid_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        # my dataloader get 6 pairs of image crops per iteration
+        if len(x.size()) > 4:
+            b, ncrops, c, h, w = x.size()
+            x = x.view(-1, c, h, w)
+            y = y.view(-1, c, h, w)
+
+        sr = self.model(x)
+        loss = F.mse_loss(sr, y)
+        self.test_psnr(sr, y)
+        self.test_ssim(sr, y)
+        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_psnr', self.test_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_ssim', self.test_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss

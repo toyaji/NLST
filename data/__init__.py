@@ -35,14 +35,11 @@ class LitDataset(LightningDataModule):
 
     def setup(self, stage: Optional[str]=None) -> None:
         if self.data == 'div':
-            train_set = DIV2K(self.dir, self.scale_idx, self.patch_size)
-            self.test_set = DIV2K(self.dir, self.scale_idx, self.patch_size, train=False)
+            self.train_set = DIV2K(self.dir, self.scale_idx, self.patch_size)
+            self.val_set = DIV2K(self.dir, self.scale_idx, self.patch_size, train=False)
         elif self.data == 'zoom':
-            train_set = ZoomLZoomData(self.dir, 'cropped', [1, self.scale_idx], self.patch_size, img_ext='JPG')
-            self.test_set = ZoomLZoomData(self.dir, 'cropped', [1, self.scale_idx], self.patch_size, img_ext='JPG', train=False)
-        
-        length = [round(len(train_set)*0.8), round(len(train_set)*0.2)]
-        self.train_set, self.val_set = random_split(train_set, length)
+            self.train_set = ZoomLZoomData(self.dir, 'cropped', [1, self.scale_idx], self.patch_size, img_ext='JPG')
+            self.val_set = ZoomLZoomData(self.dir, 'cropped', [1, self.scale_idx], self.patch_size, img_ext='JPG', train=False)
 
     def train_dataloader(self):
         return DataLoader(self.train_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
@@ -50,5 +47,6 @@ class LitDataset(LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.val_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
 
+    # TODO benchmark test 하도록 여 부분 수정하기
     def test_dataloader(self):
-        return DataLoader(self.test_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
+        return DataLoader(self.val_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
