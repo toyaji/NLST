@@ -1,6 +1,6 @@
 from pytorch_lightning import LightningDataModule
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 from torch.utils.data.dataset import random_split
 from typing import Optional
 
@@ -13,15 +13,11 @@ class LitDataset(LightningDataModule):
                  data='zoom',
                  patch_size=64,
                  batch_size=4,
-                 scale_idx=2,
+                 scale_idx=[2, 3, 4],
                  shuffle=True,
                  num_workers=4, 
-                 train_transforms=None, 
-                 val_transforms=None, 
-                 test_transforms=None):
-        super().__init__(train_transforms=train_transforms, 
-                         val_transforms=val_transforms, 
-                         test_transforms=test_transforms)
+                 **kwargs):
+        super().__init__()
 
         self.data = data
         self.dir = dir
@@ -31,15 +27,19 @@ class LitDataset(LightningDataModule):
         self.shuffle = shuffle
         self.num_workers = num_workers
 
-        #self.save_hyperparameters()
+        # settings for zoom data
+        self.kwargs = kwargs
 
     def setup(self, stage: Optional[str]=None) -> None:
         if self.data == 'div':
-            self.train_set = DIV2K(self.dir, self.scale_idx, self.patch_size)
-            self.val_set = DIV2K(self.dir, self.scale_idx, self.patch_size, train=False)
+            train_sets = [DIV2K(self.dir, i, self.patch_size) for i in self.scale_idx]
+            val_sets = [DIV2K(self.dir, i, self.patch_size, train=False) for i in self.scale_idx]
         elif self.data == 'zoom':
-            self.train_set = ZoomLZoomData(self.dir, 'cropped', [1, self.scale_idx], self.patch_size, img_ext='JPG')
-            self.val_set = ZoomLZoomData(self.dir, 'cropped', [1, self.scale_idx], self.patch_size, img_ext='JPG', train=False)
+            train_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, **self.kwargs) for i in self.scale_idx]
+            val_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
+
+        self.train_set = ConcatDataset(train_sets)
+        self.val_set = ConcatDataset(val_sets)
 
     def train_dataloader(self):
         return DataLoader(self.train_set, self.batch_size, self.shuffle, num_workers=self.num_workers)

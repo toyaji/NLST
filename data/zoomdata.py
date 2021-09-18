@@ -12,44 +12,62 @@ class ZoomLZoomData(Dataset):
     This data class return data pair which consist of 7 images having different resolution  
     
     """
-    def __init__(self, data_dir, from_dir, scale_idx, patch_size, img_ext, train: bool = True) -> None:
+    def __init__(self, dir, scale_idx, patch_size, img_ext, 
+                 get_from_dir='cropped', gray_scale=False, reduce_size=1, train=True):
         super().__init__()
         self.patch_size = patch_size
         self.scale_idx = scale_idx
-        self.get_from_dir = from_dir
+        self.get_from_dir = get_from_dir
         self.img_ext = img_ext
+        self.gray_scale = gray_scale
+        self.reduce_size = reduce_size
         self.train = train
-        self._set_filesystem(data_dir)
+
+        self._set_filesystem(dir)
 
     def __getitem__(self, idx):
-        lrs = self._scan(idx, self.scale_idx)
-        hr = lrs.pop(0)
-        # get patch or just give full size image
-        if self.patch_size == -1:
-            hrs = [hr] * len(lrs)
-        else:
-            hrs, lrs = common.get_random_patches(hr, lrs, self.patch_size)
-        hrs = torch.stack(common.np2Tensor(hrs, 1)) # size -> (6, 3, H, W)
-        lrs = torch.stack(common.np2Tensor(lrs, 1))
-        return hrs, lrs
+        hr, lr = self._scan(idx)
+        hr, lr = common.get_random_patch(hr, lr, self.patch_size)
+        # to reduce computational cost, we can consider reduce the size of inputs
+        if self.reduce_size != 1:
+            hr = cv2.resize(hr, dsize=(0, 0), fx=self.reduce_size, fy=self.reduce_size, interpolation=cv2.INTER_LINEAR)
+            lr = cv2.resize(lr, dsize=(0, 0), fx=self.reduce_size, fy=self.reduce_size, interpolation=cv2.INTER_LINEAR)
+        
+        hr, lr = common.np2Tensor([hr, lr], rgb_range=1)
+        hr, lr = common.augment([hr, lr], hflip=True, rot=True)
+        return lr, hr
 
     def __len__(self):
         return len(self.base_paths)
 
-    def _set_filesystem(self, data_dir):
-        if isinstance(data_dir, str):
-            self.apath = Path(data_dir)
+    def _set_filesystem(self, dir_data):
+        if isinstance(dir_data, str):
+            self.apath = Path(dir_data)
+        # check for path exist
+        assert self.apath.exists(), "Data dir path is wrong!"
+
         if self.train:
             self.base_paths = sorted(list((self.apath / "train").glob("*")))
         else:
             self.base_paths = sorted(list((self.apath / "test").glob("*")))
     
-    def _scan(self, idx, scale_idx=[1, 2]):
+    def _scan(self, idx):
+        (target_idx, source_idx) = self.scale_idx
         base_path = self.base_paths[idx] / self.get_from_dir
-        imgs_path = [base_path / "{:05d}.{}".format(i, self.img_ext) for i in scale_idx]
-        lrs = [cv2.imread(str(path)) for path in imgs_path]
-        lrs = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in lrs]
-        return lrs
+        target_path = base_path / "{:05d}.{}".format(target_idx, self.img_ext)
+        source_path = base_path / "{:05d}.{}".format(source_idx, self.img_ext)
+        # gray scale or RGB according to args setting
+        if self.gray_scale:
+            hr = cv2.imread(str(target_path), cv2.IMREAD_GRAYSCALE)
+            lr = cv2.imread(str(source_path), cv2.IMREAD_GRAYSCALE)
+            hr = np.expand_dims(hr, 2)
+            lr = np.expand_dims(lr, 2)
+        else:
+            hr = cv2.imread(str(target_path))
+            lr = cv2.imread(str(source_path))
+            hr = cv2.cvtColor(hr, cv2.COLOR_BGR2RGB) 
+            lr = cv2.cvtColor(lr, cv2.COLOR_BGR2RGB) 
+        return hr, lr
 
     def _get_focalscale(self, idx):
         ref_paths = self.base_paths[idx].glob("*.JPG")

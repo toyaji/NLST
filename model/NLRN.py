@@ -52,8 +52,7 @@ class ResidualBlcok(nn.Module):
     def forward(self, x):
         skip = x
         x = self.block(x)
-        x += skip
-        return x
+        return x + skip
 
 
 class NLBlockND(nn.Module):

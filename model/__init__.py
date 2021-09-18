@@ -79,6 +79,7 @@ class LitModel(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
+        # TODO benchmark 에다가 해볼 수 있게 변형
         x, y = batch
         # my dataloader get 6 pairs of image crops per iteration
         if len(x.size()) > 4:

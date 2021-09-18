@@ -27,7 +27,8 @@ class DIV2K(Dataset):
             hr, lr = common.get_random_patch(hr, lr, self.patch_size)
 
         hr, lr = common.np2Tensor([hr, lr], rgb_range=1)  
-        return hr, lr
+        hr, lr = common.augment([hr, lr], hflip=True, rot=True)  
+        return lr, hr
 
     def __len__(self):
         return len(self.hr_pathes)

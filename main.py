@@ -19,12 +19,14 @@ def main(config):
     # datamodule settting
     dm = LitDataset(**config.dataset)
 
-    # load pytorch lightning model - TODO 요 부분 argparser 로 모델명 받게하기
+    # load pytorch lightning model
     model = LitModel(config.model, config.optimizer)
 
     # instantiate trainer
-    logger = TensorBoardLogger('logs/', log_graph=True, **config.log)
-    logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
+    logger = TensorBoardLogger('logs/', **config.log)
+
+    if config.log.log_graph:
+        logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
     # callbacks
     checkpoint_callback = ModelCheckpoint(monitor="valid_loss", save_top_k=3)
