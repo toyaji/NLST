@@ -1,6 +1,7 @@
 # Log files
 /lightning_logs
 /logs
+/config
 
 # Dataset
 /dataset
