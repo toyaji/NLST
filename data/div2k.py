@@ -37,6 +37,8 @@ class DIV2K(Dataset):
         if isinstance(data_dir, str):
             self.apath = Path(data_dir)
         
+        assert self.apath.exists(), "Data dir path is wrong!"
+        
         if self.train:
             self.dir_hr = self.apath / 'HR' / 'train_HR'
             self.dir_lr = self.apath / 'LR_bicubic' / 'DIV2K_train_LR_bicubic'
