@@ -1,3 +1,9 @@
 {
-    "print.colourScheme": "Atelier Dune"
+    "print.colourScheme": "Atelier Dune",
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/dataset/**": true,
+      }
 }

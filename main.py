@@ -45,6 +45,6 @@ def main(config):
 
     
 if __name__ == "__main__":
-    from options import load_config
-    config = load_config("config/base_template.yaml")
+    from options import load_config_from_args
+    config = load_config_from_args()
     main(config)
