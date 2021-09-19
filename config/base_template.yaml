@@ -4,8 +4,8 @@ log:
   log_graph: False
 
 dataset:
-  dir: "dataset/DIV2K"
-  data: "div"                  # onlycrop / cropped / aligned
+  dir: "dataset/BSD500"
+  data: "bsd"                  # onlycrop / cropped / aligned
   scale_idx: [2, 3, 4]         # scale index (ex. 00001, 00002, 00003). First will be ref(target) 
   patch_size: 64
   batch_size: 2
@@ -20,6 +20,7 @@ dataset:
   reduce_size: 0.25
 
 model:
+  net: 'NLST'                # NLST or NLRN you can 
   in_channels: 3               # input image channel number, 3 for JPG, 4 for ARW
   work_channels: 128           # all the layer work on the same channel number
   filter_size: 64              # inpute filter size will be maintained along network 
