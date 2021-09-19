@@ -14,7 +14,8 @@ class NLST(nn.Module):
                  iteration_steps=12, 
                  mode='embedded',
                  st_schedule="aaaahhhhtttt",
-                 tps_grid_size=4):
+                 tps_grid_size=4,
+                 **kwargs):
         """
         """
         super(NLST, self).__init__()

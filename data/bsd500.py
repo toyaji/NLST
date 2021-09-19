@@ -11,6 +11,7 @@ class BSD500(Dataset):
         self.patch_size = patch_size
         self.scale_idx = scale_idx
         self.train = train
+        self.test = test
         self._set_filesystem(dir)
 
     def __getitem__(self, idx):
@@ -47,4 +48,4 @@ class BSD500(Dataset):
         if not self.train and self.test:
             self.dir_hr = self.apath / 'images' / 'test'
 
-        self.hr_pathes = list(self.dir_hr.glob("*"))
+        self.hr_pathes = list(self.dir_hr.glob("*.JPG"))

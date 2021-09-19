@@ -39,9 +39,9 @@ class LitDataset(LightningDataModule):
             train_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, **self.kwargs) for i in self.scale_idx]
             val_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
         elif self.data == 'bsd':
-            train_sets = [BSD500(self.dir, (1, i), self.patch_size, **self.kwargs) for i in self.scale_idx]
-            val_sets = [BSD500(self.dir, (1, i), self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
-            test_sets = [BSD500(self.dir, (1, i), self.patch_size, train=False, test=True, **self.kwargs) for i in self.scale_idx]
+            train_sets = [BSD500(self.dir, i, self.patch_size) for i in self.scale_idx]
+            val_sets = [BSD500(self.dir, i, self.patch_size, train=False) for i in self.scale_idx]
+            test_sets = [BSD500(self.dir, i, self.patch_size, train=False, test=True) for i in self.scale_idx]
            
         self.train_set = ConcatDataset(train_sets)
         self.val_set = ConcatDataset(val_sets)
