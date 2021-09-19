@@ -12,10 +12,11 @@ class ZoomLZoomRaw(Dataset):
     This data class return data pair which consist of 7 images having different resolution  
     
     """
-    def __init__(self, dir, scale_idx, patch_size, train=True):
+    def __init__(self, dir, scale_idx, patch_size, train=True, reduce_size=1, **kwargs):
         super().__init__()
         self.patch_size = patch_size
         self.scale_idx = scale_idx
+        self.reduce_size = reduce_size
         self.train = train
         self._set_filesystem(dir)
 

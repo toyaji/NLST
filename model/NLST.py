@@ -27,7 +27,6 @@ class NLST(nn.Module):
         self.corr = None
         self.schedule = st_schedule
 
-        # TODO 앞단에 cnn_geo_transform 붙일지 확인필요함
         # modules set
         self.front = nn.Sequential(
             nn.BatchNorm2d(in_channels),

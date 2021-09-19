@@ -24,7 +24,6 @@ class LitModel(pl.LightningModule):
             self.model = NLRN_corr(**model_params)
 
         # set metrices to evaluate performence
-        # TODO 다른 metrics 추가해야함... 모듈 만들던지 해서
         self.train_psnr = PSNR()
         self.train_ssim = SSIM()
         self.valid_psnr = PSNR()
@@ -40,7 +39,6 @@ class LitModel(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        # TODO params 분리되 되는듯... 여기다가 앞에 CNN gep 붙이는거 붙여되 되겠네
         optimazier = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         lr_scheduler = {
             'scheduler': ReduceLROnPlateau(optimazier, patience=7),

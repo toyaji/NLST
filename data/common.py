@@ -10,6 +10,7 @@ from torch._C import ErrorReport
 
 def get_raw_patch(hr, lr, patch_size):
     """Get patches of same fov from all scales of images"""
+    # FIXME TODO  여기부터 고쳐야함. 전혀 안돌아감
     ih1, iw1 = hr.shape[:2]
     ih2, iw2  =lr.shape[:2]
 

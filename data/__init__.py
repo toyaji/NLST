@@ -6,6 +6,7 @@ from typing import Optional
 
 from .div2k import DIV2K
 from .zoomdata import ZoomLZoomData
+from .zoomraw import ZoomLZoomRaw
 from .bsd500 import BSD500
 
 class LitDataset(LightningDataModule):
@@ -18,7 +19,7 @@ class LitDataset(LightningDataModule):
                  shuffle=True,
                  num_workers=4, 
                  **kwargs):
-        # TODO transformer 로 image normalization  넣기
+                 
         super().__init__()
 
         self.data = data
@@ -39,6 +40,9 @@ class LitDataset(LightningDataModule):
         elif self.data == 'zoom':
             train_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, **self.kwargs) for i in self.scale_idx]
             val_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
+        elif self.data == 'zoomraw':
+            train_sets = [ZoomLZoomRaw(self.dir, i, self.patch_size, **self.kwargs) for i in self.scale_idx]
+            val_sets = [ZoomLZoomRaw(self.dir, i, self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
         elif self.data == 'bsd':
             train_sets = [BSD500(self.dir, i, self.patch_size) for i in self.scale_idx]
             val_sets = [BSD500(self.dir, i, self.patch_size, train=False) for i in self.scale_idx]
@@ -47,7 +51,7 @@ class LitDataset(LightningDataModule):
         self.train_set = ConcatDataset(train_sets)
         self.val_set = ConcatDataset(val_sets)
 
-        if test_sets:
+        if self.data == 'bsd':
             self.test_set = ConcatDataset(test_sets)
         else:
             self.test_set = self.val_set
