@@ -6,6 +6,7 @@ from typing import Optional
 
 from .div2k import DIV2K
 from .zoomdata import ZoomLZoomData
+from .bsd500 import BSD500
 
 class LitDataset(LightningDataModule):
     def __init__(self,
@@ -37,9 +38,18 @@ class LitDataset(LightningDataModule):
         elif self.data == 'zoom':
             train_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, **self.kwargs) for i in self.scale_idx]
             val_sets = [ZoomLZoomData(self.dir, (1, i), self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
-
+        elif self.data == 'bsd':
+            train_sets = [BSD500(self.dir, (1, i), self.patch_size, **self.kwargs) for i in self.scale_idx]
+            val_sets = [BSD500(self.dir, (1, i), self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
+            test_sets = [BSD500(self.dir, (1, i), self.patch_size, train=False, test=True, **self.kwargs) for i in self.scale_idx]
+           
         self.train_set = ConcatDataset(train_sets)
         self.val_set = ConcatDataset(val_sets)
+
+        if test_sets:
+            self.test_set = ConcatDataset(test_sets)
+        else:
+            self.test_set = self.val_set
 
     def train_dataloader(self):
         return DataLoader(self.train_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
@@ -49,4 +59,4 @@ class LitDataset(LightningDataModule):
 
     # TODO benchmark test 하도록 여 부분 수정하기
     def test_dataloader(self):
-        return DataLoader(self.val_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
+        return DataLoader(self.test_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
