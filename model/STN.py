@@ -89,7 +89,7 @@ class SpatialTransformer(nn.Module):
         x = F.max_pool2d(x, 2)
         x = F.relu(self.conv3(x))
         x = F.max_pool2d(x,2)
-        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
         x = F.max_pool2d(x, 2)
         
         #print("Pre view size:{}".format(x.size()))

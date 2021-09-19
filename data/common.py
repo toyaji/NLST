@@ -8,16 +8,22 @@ import torch
 from torch._C import ErrorReport
 
 
-def get_identical_patches(imgs, patch_size):
+def get_raw_patch(hr, lr, patch_size):
     """Get patches of same fov from all scales of images"""
-    ih, iw = imgs[0].shape[:2]
+    ih1, iw1 = hr.shape[:2]
+    ih2, iw2  =lr.shape[:2]
+
     tp = patch_size
-    ix = np.random.randint(0, iw - patch_size)
-    iy = np.random.randint(0, ih - patch_size)
-    imgs = []
-    for i in range(len(imgs)):
-        imgs.append(imgs[i][iy:iy + tp, ix:ix + tp, :])
-    return imgs
+    ix = np.random.randint(0, iw1 - patch_size)
+    iy = np.random.randint(0, ih1 - patch_size)
+
+    lp = patch_size * ih2 / ih1
+    ix = np.random.randint(0, iw1 - patch_size)
+    iy = np.random.randint(0, ih1 - patch_size)
+    
+    hr = hr[iy:iy + tp, ix:ix + tp, :]
+    lr = lr[iy:iy + tp, ix:ix + tp, :]
+    return hr, lr
 
 def get_random_patch(hr, lr, patch_size):
     # some input images have little bit different size so we need to consider that
