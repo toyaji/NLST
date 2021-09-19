@@ -1,3 +1,4 @@
+from model.NLRN import NLRN
 import torch
 import pytorch_lightning as pl
 from torch.nn import functional as F
@@ -5,6 +6,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics.image import PSNR, SSIM
 
 from model.NLST import NLST
+from model.NLRN_corr import NLRN as NLRN_corr
 
 
 class LitModel(pl.LightningModule):
@@ -16,7 +18,10 @@ class LitModel(pl.LightningModule):
         self.weight_decay = opt_params.weight_decay
 
         # load the model
-        self.model = NLST(**model_params)
+        if model_params.net == 'NLST':
+            self.model = NLST(**model_params)
+        elif model_params.net == 'NLRN':
+            self.model = NLRN_corr(**model_params)
 
         # set metrices to evaluate performence
         # TODO 다른 metrics 추가해야함... 모듈 만들던지 해서

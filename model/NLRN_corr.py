@@ -4,7 +4,12 @@ from torch.nn import functional as F
 
 
 class NLRN(nn.Module):
-    def __init__(self, in_channels, work_channels, steps, mode) -> None:
+    def __init__(self, 
+                 in_channels, 
+                 work_channels, 
+                 iteration_steps, 
+                 mode,
+                 **kwargs) -> None:
         super(NLRN, self).__init__()
         
         self.front = nn.Sequential(
@@ -21,15 +26,15 @@ class NLRN(nn.Module):
             nn.Conv2d(work_channels, 1, 3, padding=1)
         )
 
-        self.steps = steps
-        self.corr = None
+        self.steps = iteration_steps
 
     def forward(self, x):
         skip = x
         x = self.front(x)
         
+        corr = 0
         for _ in range(self.steps):
-            x, self.corr = self.rb(x, self.corr)
+            x, corr = self.rb(x, corr)
 
         x = self.tail(x)
         return x + skip
@@ -151,9 +156,7 @@ class NLBlockND(nn.Module):
             f = self.W_f(concat)
             f = f.view(f.size(0), f.size(2), f.size(3))
 
-        # we need to iteratively flow the correlation
-        if corr is not None:
-            f += corr
+        f += corr
 
         if self.mode == "gaussian" or self.mode == "embedded":
             f_div_C = F.softmax(f, dim=-1)
@@ -183,6 +186,6 @@ if __name__ == '__main__':
     for bn_layer in [True, False]:
 
         img = torch.zeros(2, 3, 64, 64)
-        net = NLRN(in_channels=3, work_channels=128, steps=5, mode='embedded')
+        net = NLRN(in_channels=3, work_channels=128, iteration_steps=5, mode='embedded')
         out = net(img)
         print(out.size())
