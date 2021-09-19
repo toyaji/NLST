@@ -18,6 +18,7 @@ class LitDataset(LightningDataModule):
                  shuffle=True,
                  num_workers=4, 
                  **kwargs):
+        # TODO transformer 로 image normalization  넣기
         super().__init__()
 
         self.data = data
