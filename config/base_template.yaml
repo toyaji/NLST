@@ -4,13 +4,13 @@ log:
   log_graph: False
 
 dataset:
-  dir: "dataset/BSD500"
-  data: "bsd"                  # onlycrop / cropped / aligned
+  dir: "dataset/DIV2K"
+  data: "zoompatch"                  # onlycrop / cropped / aligned
   scale_idx: [2, 3, 4]         # scale index (ex. 00001, 00002, 00003). First will be ref(target) 
   patch_size: 64
   batch_size: 2
-  shuffle: True
-  num_workers: 16
+  shuffle: False
+  num_workers: 4
   
   # from here are zoom data args
   get_from_dir: "cropped"      # onlycrop / cropped / aligned
@@ -24,12 +24,13 @@ model:
   in_channels: 3               # input image channel number, 3 for JPG, 4 for ARW
   work_channels: 128           # all the layer work on the same channel number
   filter_size: 64              # inpute filter size will be maintained along network 
+  upsample: True
   iteration_steps: 12          # iteration step number should be same as the length of st_schedule
   mode: "embedded"             # 'gaussian', 'embedded'(dot), 'concatenate'
   st_schedule: "nnnnnnnnnnnn"  # 'a' means affine, 'h' for homography, 't' for tps
   tps_grid_size: 4
 
-trainer:                       # TODO main trainer lightning module params
+trainer:                       
   gpus: 1
   max_epochs: 100
   accumulate_grad_batches: 4

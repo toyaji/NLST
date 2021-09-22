@@ -18,7 +18,7 @@ class NLRN(nn.Module):
         self.tail = nn.Sequential(
             nn.BatchNorm2d(work_channels),
             nn.ReLU(),
-            nn.Conv2d(work_channels, 1, 3, padding=1)
+            nn.Conv2d(work_channels, 3, 3, padding=1)
         )
 
         self.steps = steps
