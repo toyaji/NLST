@@ -95,7 +95,7 @@ class LitModel(pl.LightningModule):
         loss = F.mse_loss(sr, y)
         self.test_psnr(sr, y)
         self.test_ssim(sr, y)
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('test_psnr', self.test_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('test_ssim', self.test_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_loss', loss, on_step=True)
+        self.log('test_psnr', self.test_psnr, on_step=True)
+        self.log('test_ssim', self.test_ssim, on_step=True)
         return loss
