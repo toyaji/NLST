@@ -16,6 +16,7 @@ class LitModel(pl.LightningModule):
         # set opt params
         self.lr = opt_params.learning_rate
         self.weight_decay = opt_params.weight_decay
+        self.patience = opt_params.patience
 
         # load the model
         if model_params.net == 'NLST':
@@ -39,9 +40,9 @@ class LitModel(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimazier = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        optimazier = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         lr_scheduler = {
-            'scheduler': ReduceLROnPlateau(optimazier, patience=7),
+            'scheduler': ReduceLROnPlateau(optimazier, patience=self.patience),
             'monitor': "valid_loss",
             'name': 'leraning_rate'
         }

@@ -5,8 +5,8 @@ log:
 
 dataset:
   dir: "dataset/DIV2K"
-  data: "zoompatch"                  # onlycrop / cropped / aligned
-  scale_idx: [2, 3, 4]         # scale index (ex. 00001, 00002, 00003). First will be ref(target) 
+  data: "div"                  # div, bad, zoom, zoomraw, zoompatcg
+  scale_idx: [2, 3, 4]          
   patch_size: 64
   batch_size: 2
   shuffle: False
@@ -24,7 +24,7 @@ model:
   in_channels: 3               # input image channel number, 3 for JPG, 4 for ARW
   work_channels: 128           # all the layer work on the same channel number
   filter_size: 64              # inpute filter size will be maintained along network 
-  upsample: True
+  upsample: False
   iteration_steps: 12          # iteration step number should be same as the length of st_schedule
   mode: "embedded"             # 'gaussian', 'embedded'(dot), 'concatenate'
   st_schedule: "nnnnnnnnnnnn"  # 'a' means affine, 'h' for homography, 't' for tps
@@ -40,5 +40,6 @@ trainer:
   #fast_dev_run: 1          # This is for test - it will cause error for validation step
 
 optimizer:
-  learning_rate: 1.0e-6
-  weight_decay: 1.0e-2
+  learning_rate: 1.0e-5
+  weight_decay: 1.0e-4
+  patience: 15
