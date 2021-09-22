@@ -5,7 +5,8 @@ import skimage.color as sc
 from PIL import Image
 from pathlib import Path
 import torch
-from torch._C import ErrorReport
+import torch.nn as nn
+
 
 
 def get_raw_patch(hr, lr, patch_size):
