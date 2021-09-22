@@ -30,7 +30,7 @@ def main(config):
 
     # callbacks
     checkpoint_callback = ModelCheckpoint(monitor="valid_loss", save_top_k=3)
-    early_stop_callback = EarlyStopping(monitor="valid_loss", patience=30)
+    early_stop_callback = EarlyStopping(monitor="valid_loss", patience=15)
     lr_callback = LearningRateMonitor(logging_interval='epoch')
     
     # profiling for memory usage
@@ -38,7 +38,8 @@ def main(config):
 
     trainer = Trainer(logger=logger, 
                       callbacks=[checkpoint_callback, early_stop_callback, lr_callback], 
-                      **config.trainer)
+                      **config.trainer
+                      )
     
     # start training!
     trainer.fit(model, dm)
