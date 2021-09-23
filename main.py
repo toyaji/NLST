@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from torch.utils.data.dataset import random_split
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
@@ -30,14 +30,16 @@ def main(config):
 
     # callbacks
     checkpoint_callback = ModelCheckpoint(monitor="valid_loss", save_top_k=3)
-    early_stop_callback = EarlyStopping(monitor="valid_loss", patience=20)
+    early_stop_callback = EarlyStopping(monitor="valid_loss", patience=15)
+    lr_callback = LearningRateMonitor(logging_interval='epoch')
     
     # profiling for memory usage
     #profiler=PyTorchProfiler(sort_by_key="cuda_memory_usage")
 
     trainer = Trainer(logger=logger, 
-                      callbacks=[checkpoint_callback, early_stop_callback], 
-                      **config.trainer)
+                      callbacks=[checkpoint_callback, early_stop_callback, lr_callback], 
+                      **config.trainer
+                      )
     
     # start training!
     trainer.fit(model, dm)

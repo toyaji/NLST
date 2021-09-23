@@ -7,7 +7,6 @@ from .div2k import DIV2K
 from .bsd500 import BSD500
 from .zoomdata import ZoomLZoomData
 from .zoomraw import ZoomLZoomRaw
-from .zoompatch import ZoomLZoomPatch
 
 class LitDataset(LightningDataModule):
     def __init__(self,
@@ -43,9 +42,6 @@ class LitDataset(LightningDataModule):
         elif self.data == 'zoomraw':
             train_sets = [ZoomLZoomRaw(self.dir, i, self.patch_size, **self.kwargs) for i in self.scale_idx]
             val_sets = [ZoomLZoomRaw(self.dir, i, self.patch_size, train=False, **self.kwargs) for i in self.scale_idx]
-        elif self.data == 'zoompatch':
-            train_sets = [ZoomLZoomPatch(self.dir,**self.kwargs)]
-            val_sets = [ZoomLZoomPatch(self.dir, **self.kwargs)]
         elif self.data == 'bsd':
             train_sets = [BSD500(self.dir, i, self.patch_size) for i in self.scale_idx]
             val_sets = [BSD500(self.dir, i, self.patch_size, train=False) for i in self.scale_idx]

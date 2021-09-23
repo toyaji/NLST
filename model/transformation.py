@@ -341,4 +341,3 @@ class TpsGridGen(Module):
         
         return torch.cat((points_X_prime,points_Y_prime),3)
 
-
