@@ -1,8 +1,3 @@
-import cv2
-import numpy as np
-from data import common
-import torch
-from pathlib import Path
 from .srdata import SRData
 
 
@@ -11,9 +6,6 @@ class DIV2K(SRData):
 
         super(DIV2K, self).__init__(dir=dir, scale=scale, name=name, train=train, patch_size=patch_size, 
                                     n_colors=3, rgb_range=1, augment=augment)
-
-    def __len__(self):
-        return len(self.hr_pathes)
 
     def _scan(self):
         if self.train:
@@ -28,6 +20,9 @@ class DIV2K(SRData):
         
         self.dir_hr = self.apath / 'DIV2K_train_HR'
         self.dir_lr = self.apath / 'DIV2K_train_LR_bicubic'
+
+        assert self.dir_hr.exists(), "HR input data path does not exist!"
+        assert self.dir_lr.exists(), "LR input data path does not exist!"
 
 
     

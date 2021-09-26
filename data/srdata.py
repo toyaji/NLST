@@ -24,18 +24,24 @@ class SRData(Dataset):
         self._scan()
 
     def _scan(self):
-        self.hr_pathes = sorted(list(self.dir_hr.glob("*" + self.ext[0])))
-        self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale_idx)).glob("*" + self.ext[1])))
+        # FIXME pathlib glob library don't distingish between capital and lower in Window but not in Linux.
+        self.hr_pathes = sorted(list(self.dir_hr.glob("*." + self.ext[0])))
+        self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*." + self.ext[1])))
+        
+        assert len(self.hr_pathes) > 0 or len(self.lr_pathes) > 0, "Can't read the data properly! Check the dir or data."
 
     def _set_filesystem(self, data_dir):
         if isinstance(data_dir, str):
             self.apath = Path(data_dir) / self.name
-        assert self.apath.exists(), "Data dir path is wrong!"
+        elif isinstance(data_dir, Path):
+            self.apath = data_dir / self.name
+            
+        assert self.apath.exists(), "Given base data dir path is wrong!"
         
         self.dir_hr = self.apath / 'HR' 
         self.dir_lr = self.apath / 'LR_bicubic'
         self.ext = ('png', 'png')
-        
+
         # TODO 이거 어떻게 쓰는건지... 확인 필요
         if self.input_large: self.dir_lr += 'L'
 

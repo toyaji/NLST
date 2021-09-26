@@ -1,51 +1,31 @@
-import cv2
-import numpy as np
-from data import common
-import torch
-from pathlib import Path
-from torch.utils.data import Dataset
+from .srdata import SRData
 
 
-class BSD500(Dataset):
-    def __init__(self, dir, scale_idx, patch_size, train=True, test=False, **kargs):
-        self.patch_size = patch_size
-        self.scale_idx = scale_idx
-        self.train = train
-        self.test = test
-        self._set_filesystem(dir)
+class BSD500(SRData):
+    def __init__(self, dir, scale, name='BSD500', train=True, patch_size=48, augment=True, **kwargs):
 
-    def __getitem__(self, idx):
-        
-        hr = cv2.imread(str(self.hr_pathes[idx]))
-        hr = cv2.cvtColor(hr, cv2.COLOR_BGR2RGB)    
-        h, w, _ = hr.shape
-        lr = cv2.resize(hr, dsize=(0, 0), fx=1/self.scale_idx, fy=1/self.scale_idx, interpolation=cv2.INTER_LINEAR)
-        # TODO gaussian noise 필요하면 추가하기
-        lr = cv2.resize(lr, dsize=(w, h), interpolation=cv2.INTER_LINEAR)
-        if self.patch_size == -1:
-            pass
+        super(BSD500, self).__init__(dir=dir, scale=scale, name=name, train=train, patch_size=patch_size, 
+                                    n_colors=3, rgb_range=1, augment=augment)
+
+    def _scan(self):
+        if self.train:
+            self.hr_pathes = sorted(list(self.dir_hr.glob("*")))
+            self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*")))
         else:
-            hr, lr = common.get_random_patch(hr, lr, self.patch_size)
-
-        hr, lr = common.augment([hr, lr], hflip=True, rot=True)  
-        hr, lr = common.np2Tensor([hr, lr], rgb_range=1)  
-        return lr, hr
-
-    def __len__(self):
-        return len(self.hr_pathes)
+            self.hr_pathes = sorted(list(self.dir_hr.glob("*")))
+            self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*")))
 
     def _set_filesystem(self, data_dir):
-        if isinstance(data_dir, str):
-            self.apath = Path(data_dir)
-        
-        assert self.apath.exists(), "Data dir path is wrong!"
+        super(BSD500, self)._set_filesystem(data_dir)
         
         if self.train:
-            self.dir_hr = self.apath / 'images' / 'train'
+            self.dir_hr = self.apath / 'train' / 'HR'
+            self.dir_lr = self.apath / 'train' / 'LR_bicubic'
         else:
-            self.dir_hr = self.apath / 'images' / 'val'
+            self.dir_hr = self.apath / 'test' / 'HR'
+            self.dir_lr = self.apath / 'test' / 'LR_bicubic'     
 
-        if not self.train and self.test:
-            self.dir_hr = self.apath / 'images' / 'test'
+        assert self.dir_hr.exists(), "HR input data path does not exist!"
+        assert self.dir_lr.exists(), "LR input data path does not exist!"
 
-        self.hr_pathes = list(self.dir_hr.glob("*.JPG"))
+        self.ext = ("jpg", "jpg")
