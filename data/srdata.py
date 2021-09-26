@@ -35,8 +35,8 @@ class SRData(Dataset):
             self.apath = Path(data_dir) / self.name
         elif isinstance(data_dir, Path):
             self.apath = data_dir / self.name
-            
-        assert self.apath.exists(), "Given base data dir path is wrong!"
+
+        assert self.apath.exists(), "Given base data dir path is wrong!: {}".format(self.apath)
         
         self.dir_hr = self.apath / 'HR' 
         self.dir_lr = self.apath / 'LR_bicubic'

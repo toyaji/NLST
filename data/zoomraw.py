@@ -22,6 +22,7 @@ class ZoomLZoomRaw(Dataset):
 
     def __getitem__(self, idx):
         hr, hr_raw, lr_raw = self._scan(idx)
+        
         hr, lr = common.get_raw_patch(hr, lr_raw, self.patch_size)
         # to reduce computational cost, we can consider reduce the size of inputs
         if self.reduce_size != 1:
@@ -56,7 +57,7 @@ class ZoomLZoomRaw(Dataset):
         bayer = common.get_bayer(raw_path)
         hr_raw = common.get_4ch(bayer)
         h, w = hr_raw.shape[:2]
-
+        print(hr.shape, hr_raw.shape)
         lr_raw = cv2.resize(hr_raw, dsize=(0,0), fx=1/self.scale_idx, fy=1/self.scale_idx, interpolation=cv2.INTER_LINEAR)
         lr_raw = cv2.resize(lr_raw, dsize=(w, h), interpolation=cv2.INTER_LINEAR)
 
