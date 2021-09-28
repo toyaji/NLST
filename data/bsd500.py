@@ -7,14 +7,6 @@ class BSD500(SRData):
         super(BSD500, self).__init__(dir=dir, scale=scale, name=name, train=train, patch_size=patch_size, 
                                     n_colors=3, rgb_range=1, augment=augment)
 
-    def _scan(self):
-        if self.train:
-            self.hr_pathes = sorted(list(self.dir_hr.glob("*")))
-            self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*")))
-        else:
-            self.hr_pathes = sorted(list(self.dir_hr.glob("*")))
-            self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*")))
-
     def _set_filesystem(self, data_dir):
         super(BSD500, self)._set_filesystem(data_dir)
         

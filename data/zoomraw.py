@@ -1,71 +1,44 @@
 import cv2
 import numpy as np
 from data import common
-import torch
 from pathlib import Path
-from torch.utils.data import Dataset
+from .srdata import SRData
 
 #from data import common
 
-class ZoomLZoomRaw(Dataset):
-    """
-    This data class return data pair which consist of 7 images having different resolution  
-    
-    """
-    def __init__(self, dir, scale_idx, patch_size, train=True, reduce_size=1, **kwargs):
-        super().__init__()
-        self.patch_size = patch_size
-        self.scale_idx = scale_idx
-        self.reduce_size = reduce_size
-        self.train = train
-        self._set_filesystem(dir)
+class ZoomRaw(SRData):
+    def __init__(self, dir, scale, name='ZoomRaw', train=True, patch_size=48, augment=True, **kwargs):
 
-    def __getitem__(self, idx):
-        hr, hr_raw, lr_raw = self._scan(idx)
-        
-        hr, lr = common.get_raw_patch(hr, lr_raw, self.patch_size)
-        # to reduce computational cost, we can consider reduce the size of inputs
-        if self.reduce_size != 1:
-            hr = cv2.resize(hr, dsize=(0, 0), fx=self.reduce_size, fy=self.reduce_size, interpolation=cv2.INTER_LINEAR)
-            lr = cv2.resize(lr, dsize=(0, 0), fx=self.reduce_size, fy=self.reduce_size, interpolation=cv2.INTER_LINEAR)
-        
-        hr, lr = common.augment([hr, lr], hflip=True, rot=True)
-        hr, lr = common.np2Tensor([hr, lr], rgb_range=1)
-        return lr, hr
+        super(ZoomRaw, self).__init__(dir=dir, scale=scale, name=name, train=train, patch_size=patch_size, 
+                                    n_colors=3, rgb_range=255, augment=augment)
 
-    def __len__(self):
-        return len(self.base_paths)
+    def _set_filesystem(self, data_dir):
+        if isinstance(data_dir, str):
+            self.apath = Path(data_dir) / "SRRAW"
+        elif isinstance(data_dir, Path):
+            self.apath = data_dir / "SRRAW"
 
-    def _set_filesystem(self, dir_data):
-        if isinstance(dir_data, str):
-            self.apath = Path(dir_data)
-        # check for path exist
-        assert self.apath.exists(), "Data dir path is wrong!"
+        assert self.apath.exists(), "Given base data dir path is wrong!: {}".format(self.apath)
 
         if self.train:
-            self.base_paths = sorted(list((self.apath / "train").glob("*")))
+            self.dir_hr = self.apath / 'train' / 'raw_HR_binary'
+            self.dir_lr = self.apath / 'train' / 'raw_LR_binary'
         else:
-            self.base_paths = sorted(list((self.apath / "test").glob("*")))
-    
-    def _scan(self, idx):
-        jpg_path = self.base_paths[idx] / "00001.JPG"
-        raw_path = self.base_paths[idx] / "00001.ARW"
+            self.dir_hr = self.apath / 'test' / 'raw_HR_binary'
+            self.dir_lr = self.apath / 'test' / 'raw_LR_binary'     
 
-        hr = cv2.imread(str(jpg_path))
-        hr = cv2.cvtColor(hr, cv2.COLOR_BGR2RGB)
-        # load hr and lr bayer
-        bayer = common.get_bayer(raw_path)
-        hr_raw = common.get_4ch(bayer)
-        h, w = hr_raw.shape[:2]
-        print(hr.shape, hr_raw.shape)
-        lr_raw = cv2.resize(hr_raw, dsize=(0,0), fx=1/self.scale_idx, fy=1/self.scale_idx, interpolation=cv2.INTER_LINEAR)
-        lr_raw = cv2.resize(lr_raw, dsize=(w, h), interpolation=cv2.INTER_LINEAR)
+        assert self.dir_hr.exists(), "HR input data path does not exist!"
+        assert self.dir_lr.exists(), "LR input data path does not exist!"
 
-        return hr, hr_raw, lr_raw
+        self.ext = ("npy", "npy")
 
-    def _get_focalscale(self, idx):
-        ref_paths = self.base_paths[idx].glob("*.JPG")
-        focals = [common.readFocal_pil(p) for p in ref_paths]
-        focal_scale = np.array(focals) / 240
-        return focal_scale
+    def _load_file(self, idx):
+        f_hr = self.hr_pathes[idx]
+        f_lr = self.lr_pathes[idx]
+        filename = f_hr.name
+
+        hr = np.load(f_hr)
+        lr = np.load(f_lr)
+
+        return lr, hr, filename
 
