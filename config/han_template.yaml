@@ -11,29 +11,34 @@ dataset:
   test_only: False
   args:
     dir: "dataset"
-    patch_size: 128
+    patch_size: 96
     scale: 2
 
 model:
-  net: 'NLST'                  # NLST or NLRN you can
+  net: 'HAN'          
   scale: 2
-  in_channels: 3               # input image channel number, 3 for JPG, 4 for ARW
-  work_channels: 128           # all the layer work on the same channel number
-  filter_size: 64              # inpute filter size will be maintained along network 
-  upsample: False
-  iteration_steps: 12          # iteration step number should be same as the length of st_schedule
-  mode: "embedded"             # 'gaussian', 'embedded'(dot), 'concatenate'
-  st_schedule: "nnnnnnnnnnnn"  # 'a' means affine, 'h' for homography, 't' for tps
-  tps_grid_size: 4
+  n_resgroups: 10
+  n_resblocks: 20
+  n_feats: 64
+  reduction: 16
+  rgb_range: 1
+  n_colors: 3
+  res_scale: 1
 
 trainer:                       
   gpus: 1
   max_epochs: 200
   accumulate_grad_batches: 4
   gradient_clip_val: 0.5
+  #check_val_every_n_epoch: 3
+  limit_val_batches: 0.5
   #profiler: "pytorch"
   #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
   #fast_dev_run: 1          # This is for test - it will cause error for validation step
+
+callback:
+  save_top_k: 3
+  earlly_stop_patience: 20
 
 optimizer:
   learning_rate: 1.0e-5

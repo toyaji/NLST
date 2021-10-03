@@ -66,7 +66,6 @@ class SRData(Dataset):
         return lr, hr, filename
 
     def get_patch(self, lr, hr):
-        # TODO 한번에 여러 개 이미지 넣는 경우에... 쓸 수 있나 확인하기
         scale = self.scale
         if self.train:
             lr, hr = common.get_patch(

@@ -1,12 +1,14 @@
+import math
+
 import torch
 import pytorch_lightning as pl
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics.image import PSNR, SSIM
 from torchvision.transforms import CenterCrop
+from torchvision.transforms.transforms import Scale
 
-from model.NLST import NLST
-from model.NLRN_corr import NLRN as NLRN_corr
+from importlib import import_module
 
 
 class LitModel(pl.LightningModule):
@@ -14,6 +16,7 @@ class LitModel(pl.LightningModule):
         super().__init__()
 
         # set opt params
+        self.scale = model_params.scale
         self.lr = opt_params.learning_rate
         self.weight_decay = opt_params.weight_decay
         self.patience = opt_params.patience
@@ -21,21 +24,14 @@ class LitModel(pl.LightningModule):
         self.b = 16    # boundary for psnr, ssim
 
         # load the model
-        if model_params.net == 'NLST':
-            self.model = NLST(**model_params)
-        elif model_params.net == 'NLRN':
-            self.model = NLRN_corr(**model_params)
-
-        # crop object
-        self.center_crop = CenterCrop(5)
+        module = import_module('model.' + model_params.net.lower())
+        self.model = getattr(module, model_params.net)(model_params)
 
         # set metrices to evaluate performence
-        self.train_psnr = PSNR()
-        self.train_ssim = SSIM()
-        self.valid_psnr = PSNR()
-        self.valid_ssim = SSIM()
-        self.test_psnr = PSNR()
-        self.test_ssim = SSIM()
+        self.val_psnr = PSNR(data_range=1, reduction='sum')
+        self.test_psnr = PSNR(data_range=1, reduction='sum')
+        self.val_ssim = SSIM(reduction='sum')
+        self.test_ssim = SSIM(reduction='sum')
         
         # save hprams for log
         self.save_hyperparameters(model_params)
@@ -43,6 +39,47 @@ class LitModel(pl.LightningModule):
 
     def forward(self, x):
         return self.model(x)
+
+    def forward_chop(self, x, shave=10, min_size=160000):
+        # it work for only batch size of 1
+        scale = self.scale
+        b, c, h, w = x.size()
+        h_half, w_half = h // 2, w // 2
+        h_size, w_size = h_half + shave, w_half + shave
+        lr_list = [
+            x[:, :, 0:h_size, 0:w_size],
+            x[:, :, 0:h_size, (w - w_size):w],
+            x[:, :, (h - h_size):h, 0:w_size],
+            x[:, :, (h - h_size):h, (w - w_size):w]]
+
+        if w_size * h_size < min_size:
+            sr_list = []
+            for i in range(0, 4, 1):
+                sr_batch = self.model(lr_list[i])
+                sr_list.extend(sr_batch)
+
+        else:
+            sr_list = [
+                self.forward_chop(patch, shave=shave, min_size=min_size) \
+                for patch in lr_list
+            ]
+
+        h, w = scale * h, scale * w
+        h_half, w_half = scale * h_half, scale * w_half
+        h_size, w_size = scale * h_size, scale * w_size
+        shave *= scale
+
+        output = x.new(b, c, h, w)
+        output[:, :, 0:h_half, 0:w_half] \
+            = sr_list[0][:, 0:h_half, 0:w_half]
+        output[:, :, 0:h_half, w_half:w] \
+            = sr_list[1][:, 0:h_half, (w_size - w + w_half):w_size]
+        output[:, :, h_half:h, 0:w_half] \
+            = sr_list[2][:, (h_size - h + h_half):h_size, 0:w_half]
+        output[:, :, h_half:h, w_half:w] \
+            = sr_list[3][:, (h_size - h + h_half):h_size, (w_size - w + w_half):w_size]
+
+        return output
 
     def configure_optimizers(self):
         optimazier = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -54,44 +91,45 @@ class LitModel(pl.LightningModule):
         return [optimazier], [lr_scheduler]
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, _ = batch
         sr = self(x)
-        loss = F.mse_loss(self.center_crop(sr), self.center_crop(y))
-
-        sr = sr[:, :, self.b:-self.b, self.b:-self.b]
-        y = y[:, :, self.b:-self.b, self.b:-self.b]
-        self.train_psnr(sr, y)
-        self.train_ssim(sr, y)
-        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_psnr', self.train_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_ssim', self.train_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        loss = F.mse_loss(sr, y)
+        self.log('train_loss', loss, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, _ = batch
         sr = self(x)
-        loss = F.mse_loss(self.center_crop(sr), self.center_crop(y))
-
-        sr = sr[:, :, self.b:-self.b, self.b:-self.b]
-        y = y[:, :, self.b:-self.b, self.b:-self.b]
-        self.valid_psnr(sr, y)
-        self.valid_ssim(sr, y)
-        self.log('valid_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('valid_psnr', self.valid_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('valid_ssim', self.valid_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        return loss
+        loss = F.mse_loss(sr, y)
+        psnr = self.calc_psnr(sr, y, self.scale, 1)
+        psnr2 = self.val_psnr(sr, y)
+        ssim = self.val_ssim(sr, y)
+        self.log('valid_loss', loss, prog_bar=True, logger=True)
+        self.log('valid_psnr1', psnr, prog_bar=True, logger=True)
+        self.log('valid_psnr2', psnr2, prog_bar=True, logger=True)
+        self.log('valid_ssim', ssim, prog_bar=True, logger=True)
+        return loss, psnr, ssim
 
     def test_step(self, batch, batch_idx):
-        # TODO benchmark 에다가 해볼 수 있게 변형
-        x, y = batch
-        sr = self(x)
-        loss = F.mse_loss(self.center_crop(sr), self.center_crop(y))
+        # TODO 평가 채널 하나로 어케 하는지 참고해서 반영하기
+        x, y, _ = batch
+        sr = self.forward_chop(x)
+        psnr = self.calc_psnr(sr, y, self.scale, 1)
+        ssim = self.test_ssim(sr, y)
+        self.log('test_psnr', psnr, prog_bar=True, logger=True)
+        self.log('test_ssim', ssim, prog_bar=True, logger=True)
+        return psnr, ssim
 
-        sr = sr[:, :, self.b:-self.b, self.b:-self.b]
-        y = y[:, :, self.b:-self.b, self.b:-self.b]
-        self.test_psnr(sr, y)
-        self.test_ssim(sr, y)
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('test_psnr', self.test_psnr, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log('test_ssim', self.test_ssim, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        return loss
+    @staticmethod
+    def calc_psnr(sr, hr, scale, rgb_range):
+        diff = (sr - hr) / rgb_range
+        shave = scale
+        if diff.size(1) > 1:
+            gray_coeffs = [65.738, 129.057, 25.064]
+            convert = diff.new_tensor(gray_coeffs).view(1, 3, 1, 1) / 256
+            diff = diff.mul(convert).sum(dim=1)
+
+        valid = diff[..., shave:-shave, shave:-shave]
+        mse = valid.pow(2).mean()
+
+        return -10 * math.log10(mse)
