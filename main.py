@@ -19,7 +19,7 @@ def main(config):
     model = LitModel(config.model, config.optimizer)
 
     dicts = torch.load('trained/HAN_BIX2.pt')
-    model._load_from_state_dict(dicts, 'model', None, True, 'missing', 'unexpected', "Got error!")
+    model.model.load_state_dict(dicts)
 
     # instantiate trainer
     logger = TensorBoardLogger('logs/', **config.log)
