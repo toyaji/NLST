@@ -28,8 +28,6 @@ class LitModel(pl.LightningModule):
         self.model = getattr(module, model_params.net)(model_params)
 
         # set metrices to evaluate performence
-        self.val_psnr = PSNR(data_range=1, reduction='sum')
-        self.test_psnr = PSNR(data_range=1, reduction='sum')
         self.val_ssim = SSIM(reduction='sum')
         self.test_ssim = SSIM(reduction='sum')
         
@@ -102,16 +100,14 @@ class LitModel(pl.LightningModule):
         sr = self(x)
         loss = F.mse_loss(sr, y)
         psnr = self.calc_psnr(sr, y, self.scale, 1)
-        psnr2 = self.val_psnr(sr, y)
         ssim = self.val_ssim(sr, y)
         self.log('valid_loss', loss, prog_bar=True, logger=True)
-        self.log('valid_psnr1', psnr, prog_bar=True, logger=True)
-        self.log('valid_psnr2', psnr2, prog_bar=True, logger=True)
+        self.log('valid_psnr', psnr, prog_bar=True, logger=True)
         self.log('valid_ssim', ssim, prog_bar=True, logger=True)
         return loss, psnr, ssim
 
     def test_step(self, batch, batch_idx):
-        # TODO 평가 채널 하나로 어케 하는지 참고해서 반영하기
+        # TODO 각각 데이터 셋에 대해서 평가할 수 있도록 변경하기
         x, y, _ = batch
         sr = self.forward_chop(x)
         psnr = self.calc_psnr(sr, y, self.scale, 1)
