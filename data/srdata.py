@@ -26,7 +26,7 @@ class SRData(Dataset):
     def _scan(self):
         # FIXME pathlib glob library don't distingish between capital and lower in Window but not in Linux.
         self.hr_pathes = sorted(list(self.dir_hr.glob("*." + self.ext[0])))
-        self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*." + self.ext[1])))
+        self.lr_pathes = sorted(list((self.dir_lr / "x{:1d}".format(self.scale)).glob("*." + self.ext[1])))
         
         assert len(self.hr_pathes) > 0 or len(self.lr_pathes) > 0, "Can't read the data properly! Check the dir or data."
 
