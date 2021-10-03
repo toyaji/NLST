@@ -28,8 +28,8 @@ def main(config):
         logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
     # callbacks
-    checkpoint_callback = ModelCheckpoint(monitor="train_loss", save_top_k=config.callback.save_top_k)
-    early_stop_callback = EarlyStopping(monitor="train_loss", patience=config.callback.earlly_stop_patience)
+    checkpoint_callback = ModelCheckpoint(monitor="valid_loss", save_top_k=config.callback.save_top_k)
+    early_stop_callback = EarlyStopping(monitor="valid_loss", patience=config.callback.earlly_stop_patience)
     lr_callback = LearningRateMonitor(logging_interval='epoch')
     
     # profiling for memory usage
