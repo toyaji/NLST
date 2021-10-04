@@ -103,7 +103,7 @@ class LitModel(pl.LightningModule):
         x, y, _ = batch
         sr = self(x)
         loss = F.mse_loss(sr, y)
-        self.log('train/loss', loss, prog_bar=True, logger=True)
+        self.log('train/loss', loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -112,9 +112,9 @@ class LitModel(pl.LightningModule):
         loss = F.mse_loss(sr, y)
         psnr = self.calc_psnr(sr, y, self.scale, 1)
         ssim = self.val_ssim(sr, y)
-        self.log('valid/loss', loss, prog_bar=True, logger=True)
-        self.log('valid/psnr', psnr, prog_bar=True, logger=True)
-        self.log('valid/ssim', ssim, prog_bar=True, logger=True)
+        self.log('valid/loss', loss, prog_bar=True)
+        self.log('valid/psnr', psnr, prog_bar=True)
+        self.log('valid/ssim', ssim, prog_bar=True)
 
     def test_step(self, batch, batch_idx, dataloader_idx):
         x, y, _ = batch
@@ -122,8 +122,8 @@ class LitModel(pl.LightningModule):
         psnr = self.calc_psnr(sr, y, self.scale, 1)
         ssim = self.test_ssim(sr, y)
 
-        self.log('test/{}/psnr'.format(self.test_data[dataloader_idx]), psnr, prog_bar=True, logger=True)
-        self.log('test/{}/ssim'.format(self.test_data[dataloader_idx]), ssim, prog_bar=True, logger=True)
+        self.log('test/{}/psnr'.format(self.test_data[dataloader_idx]), psnr, prog_bar=True)
+        self.log('test/{}/ssim'.format(self.test_data[dataloader_idx]), ssim, prog_bar=True)
         return psnr, ssim
 
     @staticmethod
