@@ -35,6 +35,7 @@ trainer:
   #check_val_every_n_epoch: 3
   limit_val_batches: 0.5
   #profiler: "pytorch"
+  log_gpu_memory: "all"
   #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
   #fast_dev_run: 1          # This is for test - it will cause error for validation step
 

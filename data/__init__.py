@@ -55,5 +55,4 @@ class LitDataset(LightningDataModule):
         return DataLoader(self.val_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        testloaders = [DataLoader(data, 1, self.shuffle, num_workers=self.num_workers) for data in self.test_set]
-        return testloaders
+        return [DataLoader(data, 1, self.shuffle, num_workers=self.num_workers) for data in self.test_set]
