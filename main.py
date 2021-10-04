@@ -24,13 +24,9 @@ def main(config):
     if config.log.log_graph:
         logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
-    # callbacks
     checkpoint_callback = ModelCheckpoint(monitor="valid/loss", save_top_k=config.callback.save_top_k)
     early_stop_callback = EarlyStopping(monitor="valid/loss", patience=config.callback.earlly_stop_patience)
     lr_callback = LearningRateMonitor(logging_interval='epoch')
-    
-    # profiling for memory usage
-    #profiler=PyTorchProfiler(sort_by_key="cuda_memory_usage")
 
     trainer = Trainer(logger=logger, 
                       callbacks=[checkpoint_callback, early_stop_callback, lr_callback], 
