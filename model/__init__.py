@@ -115,7 +115,6 @@ class LitModel(pl.LightningModule):
         self.log('valid/loss', loss, prog_bar=True, logger=True)
         self.log('valid/psnr', psnr, prog_bar=True, logger=True)
         self.log('valid/ssim', ssim, prog_bar=True, logger=True)
-        return loss, psnr, ssim
 
     def test_step(self, batch, batch_idx, dataloader_idx):
         x, y, _ = batch
