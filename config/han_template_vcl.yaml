@@ -34,9 +34,10 @@ trainer:
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 5   # this is not working with earllystop callback
   limit_val_batches: 0.5
+  log_gpu_memory: "all"
   #profiler: "pytorch"
   #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
-  #fast_dev_run: 1          # This is for test - it will cause error for validation step
+  #fast_dev_run: 1              # This is for test - it will cause error for validation step
 
 callback:
   save_top_k: 3
