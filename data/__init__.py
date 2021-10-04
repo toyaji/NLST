@@ -7,7 +7,8 @@ from importlib import import_module
 class LitDataset(LightningDataModule):
     def __init__(self,
                  args,
-                 data='zoom',
+                 train_data=['DIV2K'],
+                 test_data=['BSD100'],
                  batch_size=4,
                  shuffle=True,
                  num_workers=4,
@@ -16,12 +17,12 @@ class LitDataset(LightningDataModule):
                  
         super().__init__()
 
-        self.data = data
+        self.train_data = train_data
+        self.test_data = test_data
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.num_workers = num_workers
         self.test_only = test_only
-        self.test_data = ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
 
         # args for dataset
         self.args = args
@@ -29,11 +30,11 @@ class LitDataset(LightningDataModule):
     def setup(self, stage: Optional[str]=None) -> None:
         if not self.test_only:
             trainsets = []
-            for d in self.data:
+            for d in self.train_data:
                 m = import_module('data.' + d.lower())
                 trainsets.append(getattr(m, d)(**self.args, name=d))
             valsets = []
-            for d in self.data:
+            for d in self.train_data:
                 m = import_module('data.' + d.lower())
                 valsets.append(getattr(m, d)(**self.args, train=False, name=d))             
 
@@ -44,7 +45,7 @@ class LitDataset(LightningDataModule):
 
         self.train_set = ConcatDataset(trainsets)
         self.val_set = ConcatDataset(valsets)
-        self.test_set = ConcatDataset(testsets)
+        self.test_set = testsets
 
     def train_dataloader(self):
         return DataLoader(self.train_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
@@ -53,4 +54,5 @@ class LitDataset(LightningDataModule):
         return DataLoader(self.val_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, 1, self.shuffle, num_workers=self.num_workers)
+        testloaders = [DataLoader(data, 1, self.shuffle, num_workers=self.num_workers) for data in self.test_set]
+        return testloaders

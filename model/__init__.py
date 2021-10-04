@@ -12,24 +12,35 @@ from importlib import import_module
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, model_params, opt_params) -> None:
+    def __init__(self, model_params, opt_params, test_data) -> None:
         super().__init__()
 
         # set opt params
+        self.name = model_params.net
         self.scale = model_params.scale
         self.lr = opt_params.learning_rate
         self.weight_decay = opt_params.weight_decay
         self.patience = opt_params.patience
         self.factor = opt_params.factor
-        self.b = 16    # boundary for psnr, ssim
+        self.test_data = test_data
 
         # load the model
-        module = import_module('model.' + model_params.net.lower())
-        self.model = getattr(module, model_params.net)(model_params)
+        module = import_module('model.' + self.name.lower())
+        self.model = getattr(module, self.name)(model_params)
+
+        # pretrain set
+        if model_params.pretrain and hasattr(self.model, 'load_state_dict'):
+            try:
+                path = 'pretrain/{name}/{name}_X{scale}.pt'.format(name=self.name, scale=self.scale)
+                dicts = torch.load(path)
+                self.model.load_state_dict(dicts)
+            finally: 
+                print("Loading pretrained model got error. It will start without pretrained weight.")
+                pass
 
         # set metrices to evaluate performence
-        self.val_ssim = SSIM(reduction='sum')
-        self.test_ssim = SSIM(reduction='sum')
+        self.val_ssim = SSIM()
+        self.test_ssim = SSIM()
         
         # save hprams for log
         self.save_hyperparameters(model_params)
@@ -92,7 +103,7 @@ class LitModel(pl.LightningModule):
         x, y, _ = batch
         sr = self(x)
         loss = F.mse_loss(sr, y)
-        self.log('train_loss', loss, prog_bar=True, logger=True)
+        self.log('train/loss', loss, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -101,19 +112,19 @@ class LitModel(pl.LightningModule):
         loss = F.mse_loss(sr, y)
         psnr = self.calc_psnr(sr, y, self.scale, 1)
         ssim = self.val_ssim(sr, y)
-        self.log('valid_loss', loss, prog_bar=True, logger=True)
-        self.log('valid_psnr', psnr, prog_bar=True, logger=True)
-        self.log('valid_ssim', ssim, prog_bar=True, logger=True)
+        self.log('valid/loss', loss, prog_bar=True, logger=True)
+        self.log('valid/psnr', psnr, prog_bar=True, logger=True)
+        self.log('valid/ssim', ssim, prog_bar=True, logger=True)
         return loss, psnr, ssim
 
-    def test_step(self, batch, batch_idx):
-        # TODO 각각 데이터 셋에 대해서 평가할 수 있도록 변경하기
+    def test_step(self, batch, batch_idx, dataloader_idx):
         x, y, _ = batch
         sr = self.forward_chop(x)
         psnr = self.calc_psnr(sr, y, self.scale, 1)
         ssim = self.test_ssim(sr, y)
-        self.log('test_psnr', psnr, prog_bar=True, logger=True)
-        self.log('test_ssim', ssim, prog_bar=True, logger=True)
+
+        self.log('test/{}/psnr'.format(self.test_data[dataloader_idx]), psnr, prog_bar=True, logger=True)
+        self.log('test/{}/ssim'.format(self.test_data[dataloader_idx]), ssim, prog_bar=True, logger=True)
         return psnr, ssim
 
     @staticmethod

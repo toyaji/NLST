@@ -4,7 +4,8 @@ log:
   log_graph: False
 
 dataset:
-  data: ["DIV2K"]              # div, bad, zoom, zoomraw, zoompatcg
+  data: ["DIV2K"]              
+  test_data: ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   batch_size: 12
   shuffle: True
   num_workers: 16
@@ -15,7 +16,8 @@ dataset:
     scale: 2
 
 model:
-  net: 'HAN'          
+  net: 'HAN'       
+  pretrain: True     
   scale: 2
   n_resgroups: 10
   n_resblocks: 20

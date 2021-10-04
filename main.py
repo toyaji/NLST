@@ -16,10 +16,7 @@ def main(config):
     dm = LitDataset(**config.dataset)
 
     # load pytorch lightning model
-    model = LitModel(config.model, config.optimizer)
-
-    dicts = torch.load('trained/HAN_BIX2.pt')
-    model.model.load_state_dict(dicts)
+    model = LitModel(config.model, config.optimizer, config.dataset.test_data)
 
     # instantiate trainer
     logger = TensorBoardLogger('logs/', **config.log)

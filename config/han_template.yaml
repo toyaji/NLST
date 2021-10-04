@@ -4,7 +4,8 @@ log:
   log_graph: False
 
 dataset:
-  data: ["DIV2K"]              # div, bad, zoom, zoomraw, zoompatcg
+  data: ["DIV2K"]              # DIV2K, BSD500, ...
+  test_data: ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   batch_size: 2
   shuffle: True
   num_workers: 4
@@ -15,7 +16,8 @@ dataset:
     scale: 2
 
 model:
-  net: 'HAN'          
+  net: 'HAN'
+  pretrain: True       
   scale: 2
   n_resgroups: 10
   n_resblocks: 20
@@ -27,7 +29,7 @@ model:
 
 trainer:                       
   gpus: 1
-  max_epochs: 200
+  max_epochs: 1
   accumulate_grad_batches: 4
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 3
