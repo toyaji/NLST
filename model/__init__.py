@@ -129,6 +129,7 @@ class LitModel(pl.LightningModule):
 
     @staticmethod
     def calc_psnr(sr, hr, scale, rgb_range):
+        # TODO make into custom metrics class 
         diff = (sr - hr) / rgb_range
         shave = scale
         if diff.size(1) > 1:
