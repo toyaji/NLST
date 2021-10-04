@@ -4,7 +4,7 @@ log:
   log_graph: False
 
 dataset:
-  data: ["DIV2K"]              
+  train_data: ["DIV2K"]              
   test_data: ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   batch_size: 12
   shuffle: True
