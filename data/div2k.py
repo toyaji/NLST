@@ -24,20 +24,7 @@ class DIV2K(SRData):
         assert self.dir_hr.exists(), "HR input data path does not exist!"
         assert self.dir_lr.exists(), "LR input data path does not exist!"
 
-    def get_patch(self, lr, hr):
-        scale = self.scale
-        if self.patch_size > 0:
-            lr, hr = common.get_patch(
-                lr, hr,
-                patch_size=self.patch_size,
-                scale=scale,
-                input_large=self.input_large
-            )
-            if self.augment: lr, hr = common.augment(lr, hr)
-        else:
-            ih, iw = lr.shape[:2]
-            hr = hr[0:ih * scale, 0:iw * scale]
-        return lr, hr
+
 
 
     
