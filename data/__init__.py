@@ -12,7 +12,6 @@ class LitDataset(LightningDataModule):
                  batch_size=4,
                  shuffle=True,
                  num_workers=4,
-                 test_only=False,
                  **kwargs):
                  
         super().__init__()
@@ -22,13 +21,13 @@ class LitDataset(LightningDataModule):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.num_workers = num_workers
-        self.test_only = test_only
 
         # args for dataset
         self.args = args
 
     def setup(self, stage: Optional[str]=None) -> None:
-        if not self.test_only:
+
+        if stage == "fit":
             trainsets = []
             for d in self.train_data:
                 m = import_module('data.' + d.lower())
@@ -36,16 +35,18 @@ class LitDataset(LightningDataModule):
             valsets = []
             for d in self.train_data:
                 m = import_module('data.' + d.lower())
-                valsets.append(getattr(m, d)(**self.args, train=False, name=d))             
+                valsets.append(getattr(m, d)(**self.args, train=False, name=d))
 
-        testsets = []
-        for d in self.test_data:
-            m = import_module('data.benchmark')
-            testsets.append(getattr(m, 'Benchmark')(**self.args, train=False, name=d))
+            self.train_set = ConcatDataset(trainsets)
+            self.val_set = ConcatDataset(valsets)           
 
-        self.train_set = ConcatDataset(trainsets)
-        self.val_set = ConcatDataset(valsets)
-        self.test_set = testsets
+        if stage == "test":
+            testsets = []
+            for d in self.test_data:
+                m = import_module('data.benchmark')
+                testsets.append(getattr(m, 'Benchmark')(**self.args, train=False, name=d))
+
+            self.test_set = testsets
 
     def train_dataloader(self):
         return DataLoader(self.train_set, self.batch_size, self.shuffle, num_workers=self.num_workers)
