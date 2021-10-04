@@ -32,7 +32,7 @@ trainer:
   max_epochs: 250
   accumulate_grad_batches: 1
   gradient_clip_val: 0.5
-  check_val_every_n_epoch: 5
+  #check_val_every_n_epoch: 5   # this is not working with earllystop callback
   limit_val_batches: 0.5
   #profiler: "pytorch"
   #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"

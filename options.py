@@ -19,6 +19,6 @@ def load_config_from_args():
     
     config = load_config(args.config)
     config.log.name = args.name
-    config.log.version = datetime.now().strftime("%y%m%d%H%M")
+    config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
 
     return config
