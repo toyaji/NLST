@@ -67,7 +67,7 @@ class SRData(Dataset):
 
     def get_patch(self, lr, hr):
         scale = self.scale
-        if self.train:
+        if self.patch_size > 0:
             lr, hr = common.get_patch(
                 lr, hr,
                 patch_size=self.patch_size,
