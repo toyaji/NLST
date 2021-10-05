@@ -221,12 +221,23 @@ class HAN(nn.Module):
                                            'whose dimensions in the model are {} and '
                                            'whose dimensions in the checkpoint are {}.'
                                            .format(name, own_state[name].size(), param.size()))
-            elif strict:
-                if name.find('tail') == -1:
-                    raise KeyError('unexpected key "{}" in state_dict'
-                                   .format(name))
+            elif name.find('ga.') >= 0:
+                if isinstance(param, nn.Parameter):
+                    param = param.data
+                try:
+                    own_state[name.replace('ga.', 'csa.')].copy_(param)
+                except Exception:
+                    if strict: raise RuntimeError
+                    else: pass
 
-        if strict:
-            missing = set(own_state.keys()) - set(state_dict.keys())
-            if len(missing) > 0:
-                raise KeyError('missing keys in state_dict: "{}"'.format(missing))
+            elif name.find('da.') >= 0:
+                if isinstance(param, nn.Parameter):
+                    param = param.data
+                try:
+                    own_state[name.replace('da.', 'la.')].copy_(param)
+                except Exception:
+                    if strict: raise RuntimeError
+                    else: pass             
+
+            else:
+                raise KeyError('missing keys in state_dict: "{}"'.format(name))
