@@ -15,10 +15,12 @@ def load_config_from_args():
     args = argparse.ArgumentParser()
     args.add_argument("-c", "--config", required=True, help="You can see the sample yaml template in /config folder.")
     args.add_argument("-n", "--name", type=str, help="You can put the name for the experiment, this will be used for log file name.")
+    args.add_argument("--test_only", action='store_true', help='set this option to test the model')
     args = args.parse_args(sys.argv[1:])
     
     config = load_config(args.config)
     config.log.name = args.name
     config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
+    config.test_only = args.test_only
 
     return config

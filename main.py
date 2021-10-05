@@ -34,8 +34,10 @@ def main(config):
                       )
     
     # start training!
-    trainer.fit(model, dm)
-    trainer.test(datamodule=dm)
+    if not config.test_only:
+        trainer.fit(model, dm)
+    
+    trainer.test(model, datamodule=dm)
 
     
 if __name__ == "__main__":
