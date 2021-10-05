@@ -4,7 +4,9 @@ import torch
 import pytorch_lightning as pl
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torchmetrics.image import PSNR, SSIM
+from pytorch_lightning.metrics.functional import ssim as _ssim
+
+from torchmetrics.image import LPIPS
 from torchvision.transforms import CenterCrop
 from torchvision.transforms.transforms import Scale
 
@@ -37,10 +39,6 @@ class LitModel(pl.LightningModule):
             finally: 
                 print("Loading pretrained model got error. It will start without pretrained weight.")
                 pass
-
-        # set metrices to evaluate performence
-        self.val_ssim = SSIM()
-        self.test_ssim = SSIM()
         
         # save hprams for log
         self.save_hyperparameters(model_params)
@@ -110,8 +108,8 @@ class LitModel(pl.LightningModule):
         x, y, _ = batch
         sr = self(x)
         loss = F.mse_loss(sr, y)
-        psnr = self.calc_psnr(sr, y, self.scale, 1)
-        ssim = self.val_ssim(sr, y)
+        psnr = self._psnr(sr, y, self.scale, 1)
+        ssim = _ssim(sr, y)
         self.log('valid/loss', loss, prog_bar=True)
         self.log('valid/psnr', psnr, prog_bar=True)
         self.log('valid/ssim', ssim, prog_bar=True)
@@ -119,15 +117,15 @@ class LitModel(pl.LightningModule):
     def test_step(self, batch, batch_idx, dataloader_idx):
         x, y, _ = batch
         sr = self.forward_chop(x)
-        psnr = self.calc_psnr(sr, y, self.scale, 1)
-        ssim = self.test_ssim(sr, y)
-
+        psnr = self._psnr(sr, y, self.scale, 1)
+        ssim = _ssim(sr, y)
+        
         self.log('test/{}/psnr'.format(self.test_data[dataloader_idx]), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(self.test_data[dataloader_idx]), ssim, prog_bar=True)
         return psnr, ssim
 
     @staticmethod
-    def calc_psnr(sr, hr, scale, rgb_range):
+    def _psnr(sr, hr, scale, rgb_range):
         # TODO make into custom metrics class 
         diff = (sr - hr) / rgb_range
         shave = scale
