@@ -4,21 +4,20 @@ log:
   log_graph: False
 
 dataset:
-  train_data: ["DIV2K", "ZoomRGB"]              # DIV2K, BSD500, ...
+  train_data: ["DIV2K", ]              # DIV2K, BSD500, ...
   test_data: ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   batch_size: 2
   shuffle: True
   num_workers: 4
-  test_only: False
   args:
     dir: "dataset"
     patch_size: 96
-    scale: 3
+    scale: 2
 
 model:
   net: 'HAN'
   pretrain: True       
-  scale: 3
+  scale: 2
   n_resgroups: 10
   n_resblocks: 20
   n_feats: 64
