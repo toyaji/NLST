@@ -111,6 +111,7 @@ class LitModel(pl.LightningModule):
     def test_step(self, batch, batch_idx, dataloader_idx):
         x, y, _ = batch
         sr = self.forward_chop(x)
+        sr = self._quantize(sr, 1)
         psnr = self._psnr(sr, y, self.scale, 1)
         ssim = _ssim(sr, y)
         
@@ -132,3 +133,8 @@ class LitModel(pl.LightningModule):
         mse = valid.pow(2).mean()
 
         return -10 * math.log10(mse)
+
+    @staticmethod
+    def _quantize(img, rgb_range):
+        pixel_range = 255 / rgb_range
+        return img.mul(pixel_range).clamp(0, 255).round().div(pixel_range)
