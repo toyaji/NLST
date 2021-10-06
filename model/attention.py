@@ -6,7 +6,7 @@ from torch.nn.utils import weight_norm as weight_norm_fn
 from PIL import Image
 from torchvision import transforms
 from torchvision import utils as vutils
-from model import common
+from model import common_csnln as common
 from model.utils.tools import extract_image_patches,\
     reduce_mean, reduce_sum, same_padding
 

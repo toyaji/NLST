@@ -1,4 +1,4 @@
-from model import common
+from model import common_han as common
 import torch
 import torch.nn as nn
 
@@ -241,3 +241,5 @@ class HAN(nn.Module):
 
             else:
                 raise KeyError('missing keys in state_dict: "{}"'.format(name))
+
+            print("<All keys matched successfully>")
