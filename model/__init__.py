@@ -49,12 +49,14 @@ class LitModel(pl.LightningModule):
         return self.model(x)
 
     def forward_chop(self, x, shave=10, min_size=160000):
-        # TODO min_size 받는 부분 고민 좀 필요함...
         # it work for only batch size of 1
         scale = self.scale
         b, c, h, w = x.size()
         h_half, w_half = h // 2, w // 2
         h_size, w_size = h_half + shave, w_half + shave
+        # consider odd size
+        h_size += scale-h_size%scale
+        w_size += scale-w_size%scale
         lr_list = [
             x[:, :, 0:h_size, 0:w_size],
             x[:, :, 0:h_size, (w - w_size):w],
@@ -62,16 +64,15 @@ class LitModel(pl.LightningModule):
             x[:, :, (h - h_size):h, (w - w_size):w]]
 
         if w_size * h_size < min_size:
-            sr_list = []
-            for i in range(0, 4, 1):
-                sr_batch = self.model(lr_list[i])
-                sr_list.extend(sr_batch)
-
+            lr_batch = torch.cat(lr_list)
+            sr_batch = self.model(lr_batch)
         else:
-            sr_list = [
+            # it works as recurring function, so shave pixel could be smaller than first
+            shave = int(shave // 1.5)
+            sr_batch = torch.cat([
                 self.forward_chop(patch, shave=shave, min_size=min_size) \
                 for patch in lr_list
-            ]
+            ], dim=0)
 
         h, w = scale * h, scale * w
         h_half, w_half = scale * h_half, scale * w_half
@@ -79,14 +80,10 @@ class LitModel(pl.LightningModule):
         shave *= scale
 
         output = x.new(b, c, h, w)
-        output[:, :, 0:h_half, 0:w_half] \
-            = sr_list[0][:, 0:h_half, 0:w_half]
-        output[:, :, 0:h_half, w_half:w] \
-            = sr_list[1][:, 0:h_half, (w_size - w + w_half):w_size]
-        output[:, :, h_half:h, 0:w_half] \
-            = sr_list[2][:, (h_size - h + h_half):h_size, 0:w_half]
-        output[:, :, h_half:h, w_half:w] \
-            = sr_list[3][:, (h_size - h + h_half):h_size, (w_size - w + w_half):w_size]
+        output[:, :, 0:h_half, 0:w_half] = sr_batch[0:b, :, 0:h_half, 0:w_half]
+        output[:, :, 0:h_half, w_half:w] = sr_batch[b:b*2, :, 0:h_half, (w_size - w + w_half):w_size]
+        output[:, :, h_half:h, 0:w_half] = sr_batch[b*2:b*3, :, (h_size - h + h_half):h_size, 0:w_half]
+        output[:, :, h_half:h, w_half:w] = sr_batch[b*3:b*4, :, (h_size - h + h_half):h_size, (w_size - w + w_half):w_size]
 
         return output
 
