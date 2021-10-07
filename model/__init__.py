@@ -1,11 +1,17 @@
+import os
 import math
+from pathlib import Path
+import cv2
 import torch
 import pytorch_lightning as pl
+from torch import Tensor
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning.metrics.functional import ssim as _ssim
 from importlib import import_module
 
+
+CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 2500}
 
 class LitModel(pl.LightningModule):
     def __init__(self, model_params, opt_params, test_data) -> None:
@@ -19,6 +25,7 @@ class LitModel(pl.LightningModule):
         self.patience = opt_params.patience
         self.factor = opt_params.factor
         self.test_data = test_data
+        self.chop_size = CHOP_SIZE[self.name]
 
         # load the model
         module = import_module('model.' + self.name.lower())
@@ -42,6 +49,7 @@ class LitModel(pl.LightningModule):
         return self.model(x)
 
     def forward_chop(self, x, shave=10, min_size=160000):
+        # TODO min_size 받는 부분 고민 좀 필요함...
         # it work for only batch size of 1
         scale = self.scale
         b, c, h, w = x.size()
@@ -108,16 +116,30 @@ class LitModel(pl.LightningModule):
         self.log('valid/psnr', psnr, prog_bar=True)
         self.log('valid/ssim', ssim, prog_bar=True)
 
-    def test_step(self, batch, batch_idx, dataloader_idx):
-        x, y, _ = batch
-        sr = self.forward_chop(x)
+    def test_step(self, batch, batch_idx, dataloader_idx=None):
+        x, y, filename = batch
+        dataset_name = self.test_data[dataloader_idx]
+        sr = self.forward_chop(x, min_size=self.chop_size)
+        self._img_save(sr.clone().detach(), filename[0], dataset_name)
         sr = self._quantize(sr, 1)
         psnr = self._psnr(sr, y, self.scale, 1)
         ssim = _ssim(sr, y)
         
-        self.log('test/{}/psnr'.format(self.test_data[dataloader_idx]), psnr, prog_bar=True)
-        self.log('test/{}/ssim'.format(self.test_data[dataloader_idx]), ssim, prog_bar=True)
+        self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
+        self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
         return psnr, ssim
+
+    @staticmethod
+    def _img_save(sr, filename, dataset_name):
+        if isinstance(sr, Tensor):
+            img = sr.mul(255).cpu().numpy()
+
+        base = Path("results")
+        base.mkdir(exist_ok=True)
+        save_path = base / dataset_name
+        save_path.mkdir(exist_ok=True)
+
+        cv2.imwrite(str(save_path / "{}".format(filename)), img[0].transpose(1,2,0))
 
     @staticmethod
     def _psnr(sr, hr, scale, rgb_range):
