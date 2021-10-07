@@ -4,6 +4,7 @@
 
 # Dataset
 /dataset
+/results
 
 # Test files
 *test.*
