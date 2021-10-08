@@ -118,16 +118,16 @@ class LitModel(pl.LightningModule):
         x, y, filename = batch
         dataset_name = self.test_data[dataloader_idx]
         sr = self.forward_chop(x, min_size=self.chop_size)
-
-        if self.save_test_img:
-            self._img_save(sr.clone().detach(), filename[0], dataset_name)
-
         sr = self._quantize(sr, 1)
         psnr = self._psnr(sr, y, self.scale, 1)
         ssim = _ssim(sr, y)
         
         self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
+
+        if self.save_test_img:
+            self._img_save(sr.clone().detach(), filename[0], dataset_name)
+
         return psnr, ssim
 
     @staticmethod
