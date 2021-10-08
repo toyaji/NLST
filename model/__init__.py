@@ -8,6 +8,7 @@ from torch import Tensor
 from torch.nn import functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning.metrics.functional import ssim as _ssim
+from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
 
@@ -37,14 +38,18 @@ class LitModel(pl.LightningModule):
             try:
                 path = 'pretrain/{name}/{name}_X{scale}.pt'.format(name=self.name, scale=self.scale)
                 dicts = torch.load(path)
-                self.model.load_state_dict(dicts)
-            finally: 
-                print("Loading pretrained model got error. It will start without pretrained weight.")
+                msg = self.model.load_state_dict(dicts)
+                print(msg)
+            except Exception as e: 
+                print(e, "Loading pretrained model got error. It will start without pretrained weight.")
                 pass
         
         # save hprams for log
         self.save_hyperparameters(model_params)
         self.save_hyperparameters(opt_params)
+
+        # metrics
+        self.ssim = SSIM()
 
     def forward(self, x):
         return self.model(x)
@@ -121,9 +126,10 @@ class LitModel(pl.LightningModule):
         sr = self._quantize(sr, 1)
         psnr = self._psnr(sr, y, self.scale, 1)
         ssim = _ssim(sr, y)
-        
+        self.ssim(sr, y)
         self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
+        self.log('test/{}/ssim2'.format(dataset_name), self.ssim, prog_bar=True)
 
         if self.save_test_img:
             self._img_save(sr.clone().detach(), filename[0], dataset_name)
