@@ -11,7 +11,7 @@ from pytorch_lightning.metrics.functional import ssim as _ssim
 from importlib import import_module
 
 
-CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 2500}
+CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 25000}
 
 class LitModel(pl.LightningModule):
     def __init__(self, model_params, opt_params, data_params) -> None:
@@ -26,7 +26,7 @@ class LitModel(pl.LightningModule):
         self.factor = opt_params.factor
         self.test_data = data_params.test_data
         self.save_test_img = data_params.save_test_img
-        self.chop_size = CHOP_SIZE[self.name]
+        self.chop_size = CHOP_SIZE[self.name] if model_params.chop_size is None else model_params.chop_size
 
         # load the model
         module = import_module('model.' + self.name.lower())
