@@ -6,6 +6,8 @@ log:
 dataset:
   train_data: ["DIV2K", ]              # DIV2K, BSD500, ...
   test_data: ['Set5', 'Set14']                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+  save_test_img: False
+  test_only: False
   batch_size: 2
   shuffle: True
   num_workers: 6
@@ -28,7 +30,7 @@ model:
 
 trainer:                       
   gpus: 1
-  max_epochs: 100
+  max_epochs: 1
   accumulate_grad_batches: 4
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 3

@@ -14,7 +14,7 @@ from importlib import import_module
 CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 2500}
 
 class LitModel(pl.LightningModule):
-    def __init__(self, model_params, opt_params, test_data) -> None:
+    def __init__(self, model_params, opt_params, data_params) -> None:
         super().__init__()
 
         # set opt params
@@ -24,7 +24,8 @@ class LitModel(pl.LightningModule):
         self.weight_decay = opt_params.weight_decay
         self.patience = opt_params.patience
         self.factor = opt_params.factor
-        self.test_data = test_data
+        self.test_data = data_params.test_data
+        self.save_test_img = data_params.save_test_img
         self.chop_size = CHOP_SIZE[self.name]
 
         # load the model
@@ -117,7 +118,10 @@ class LitModel(pl.LightningModule):
         x, y, filename = batch
         dataset_name = self.test_data[dataloader_idx]
         sr = self.forward_chop(x, min_size=self.chop_size)
-        self._img_save(sr.clone().detach(), filename[0], dataset_name)
+
+        if self.save_test_img:
+            self._img_save(sr.clone().detach(), filename[0], dataset_name)
+
         sr = self._quantize(sr, 1)
         psnr = self._psnr(sr, y, self.scale, 1)
         ssim = _ssim(sr, y)
@@ -129,14 +133,17 @@ class LitModel(pl.LightningModule):
     @staticmethod
     def _img_save(sr, filename, dataset_name):
         if isinstance(sr, Tensor):
-            img = sr.mul(255).cpu().numpy()
+            sr = sr.mul(255).cpu().numpy()
 
         base = Path("results")
         base.mkdir(exist_ok=True)
         save_path = base / dataset_name
         save_path.mkdir(exist_ok=True)
 
-        cv2.imwrite(str(save_path / "{}".format(filename)), img[0].transpose(1,2,0))
+        sr = sr.transpose(0, 2, 3, 1)
+        for img in sr:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(str(save_path / filename), img)
 
     @staticmethod
     def _psnr(sr, hr, scale, rgb_range):

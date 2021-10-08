@@ -16,7 +16,7 @@ def main(config):
     dm = LitDataset(**config.dataset)
 
     # load pytorch lightning model
-    model = LitModel(config.model, config.optimizer, config.dataset.test_data)
+    model = LitModel(config.model, config.optimizer, config.dataset)
 
     # instantiate trainer
     logger = TensorBoardLogger('logs/', **config.log)
@@ -34,7 +34,7 @@ def main(config):
                       )
     
     # start training!
-    if not config.test_only:
+    if not config.dataset.test_only:
         trainer.fit(model, dm)
     
     trainer.test(model, datamodule=dm)
