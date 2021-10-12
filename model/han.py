@@ -238,8 +238,7 @@ class HAN(nn.Module):
                 except Exception:
                     if strict: raise RuntimeError
                     else: pass             
-
             else:
                 raise KeyError('missing keys in state_dict: "{}"'.format(name))
 
-        print("<All keys matched successfully>")
+        return "<All keys matched successfully>"
