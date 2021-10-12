@@ -34,4 +34,5 @@ def load_config_from_args():
 
     # rgb range set copy to model param
     config.model.rgb_range = config.dataset.args.rgb_range
+    config.model.scale = config.dataset.args.scale
     return config

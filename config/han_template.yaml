@@ -14,13 +14,12 @@ dataset:
   args:
     dir: "dataset"
     patch_size: 192
-    scale: 2
+    scale: 3
     rgb_range: 255
 
 model:
   net: 'HAN'
   pretrain: True       
-  scale: 2
   n_resgroups: 10
   n_resblocks: 20
   n_feats: 64

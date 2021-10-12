@@ -20,7 +20,6 @@ dataset:
 model:
   net: 'CSNLN'
   pretrain: True       
-  scale: 2
   depth: 12
   n_resblocks: 16
   n_feats: 128
