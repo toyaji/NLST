@@ -31,4 +31,7 @@ def load_config_from_args():
     config.dataset.test_only = args.test_only
     config.dataset.save_test_img = args.save_imgs
     config.model.chop_size = args.chop_size
+
+    # rgb range set copy to model param
+    config.model.rgb_range = config.dataset.args.rgb_range
     return config

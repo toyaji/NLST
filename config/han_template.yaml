@@ -10,11 +10,12 @@ dataset:
   test_only: False
   batch_size: 2
   shuffle: True
-  num_workers: 6
+  num_workers: 4
   args:
     dir: "dataset"
-    patch_size: 96
+    patch_size: 192
     scale: 2
+    rgb_range: 255
 
 model:
   net: 'HAN'
@@ -24,13 +25,12 @@ model:
   n_resblocks: 20
   n_feats: 64
   reduction: 16
-  rgb_range: 1
   n_colors: 3
   res_scale: 1
 
 trainer:                       
   gpus: 1
-  max_epochs: 1
+  max_epochs: 200
   accumulate_grad_batches: 4
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 3

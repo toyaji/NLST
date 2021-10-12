@@ -5,10 +5,10 @@ from .srdata import SRData
 from . import common
 
 class ZoomRaw2RGB(SRData):
-    def __init__(self, dir, scale, name='ZoomRaw2RGB', train=True, patch_size=48, augment=True, **kwargs):
+    def __init__(self, dir, scale, name='ZoomRaw2RGB', train=True, patch_size=48, rgb_range=1, augment=True, **kwargs):
 
         super(ZoomRaw2RGB, self).__init__(dir=dir, scale=scale, name=name, train=train, patch_size=patch_size, 
-                                    n_colors=3, rgb_range=1, augment=augment)
+                                    n_colors=3, rgb_range=rgb_range, augment=augment)
 
     def _set_filesystem(self, data_dir):
         if isinstance(data_dir, str):

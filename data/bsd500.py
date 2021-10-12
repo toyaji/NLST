@@ -2,10 +2,10 @@ from .srdata import SRData
 
 
 class BSD500(SRData):
-    def __init__(self, dir, scale, name='BSD500', train=True, patch_size=48, augment=True, **kwargs):
+    def __init__(self, dir, scale, name='BSD500', train=True, patch_size=48, rgb_range=1, augment=True, **kwargs):
 
         super(BSD500, self).__init__(dir=dir, scale=scale, name=name, train=train, patch_size=patch_size, 
-                                    n_colors=3, rgb_range=1, augment=augment)
+                                    n_colors=3, rgb_range=rgb_range, augment=augment)
 
     def _set_filesystem(self, data_dir):
         super(BSD500, self)._set_filesystem(data_dir)

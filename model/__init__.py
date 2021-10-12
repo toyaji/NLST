@@ -21,6 +21,7 @@ class LitModel(pl.LightningModule):
         # set opt params
         self.name = model_params.net
         self.scale = model_params.scale
+        self.rgb_range = model_params.rgb_range
         self.lr = opt_params.learning_rate
         self.weight_decay = opt_params.weight_decay
         self.patience = opt_params.patience
@@ -73,8 +74,6 @@ class LitModel(pl.LightningModule):
             lr_batch = torch.cat(lr_list)
             sr_batch = self.model(lr_batch)
         else:
-            # it works as recurring function, so shave pixel could be smaller than first
-            shave = int(shave // 1.5)
             sr_batch = torch.cat([
                 self.forward_chop(patch, shave=shave, min_size=min_size) \
                 for patch in lr_list
@@ -113,23 +112,22 @@ class LitModel(pl.LightningModule):
         x, y, _ = batch
         sr = self(x)
         loss = F.mse_loss(sr, y)
-        psnr = self._psnr(sr, y, self.scale, 1)
+        psnr = self._psnr(sr, y, self.scale, self.rgb_range)
         ssim = _ssim(sr, y)
         self.log('valid/loss', loss, prog_bar=True)
         self.log('valid/psnr', psnr, prog_bar=True)
         self.log('valid/ssim', ssim, prog_bar=True)
 
-    def test_step(self, batch, batch_idx, dataloader_idx=None):
+    def test_step(self, batch, batch_idx, dataloader_idx=0):
         x, y, filename = batch
         dataset_name = self.test_data[dataloader_idx]
         sr = self.forward_chop(x, min_size=self.chop_size)
-        sr = self._quantize(sr, 1)
-        psnr = self._psnr(sr, y, self.scale, 1)
+        sr = self._quantize(sr, self.rgb_range)
+        psnr = self._psnr(sr, y, self.scale, self.rgb_range)
         ssim = _ssim(sr, y)
-        self.ssim(sr, y)
+
         self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
-        self.log('test/{}/ssim2'.format(dataset_name), self.ssim, prog_bar=True)
 
         if self.save_test_img:
             self._img_save(sr.clone().detach(), filename[0], dataset_name)

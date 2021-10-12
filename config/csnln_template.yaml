@@ -5,7 +5,7 @@ log:
 
 dataset:
   train_data: ["DIV2K", ]              # DIV2K, BSD500, ...
-  test_data: ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+  test_data: ['Set5', 'Set14', 'BSD100', 'Urban100',]                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
   batch_size: 2
@@ -15,6 +15,7 @@ dataset:
     dir: "dataset"
     patch_size: 64
     scale: 2
+    rgb_range: 1
 
 model:
   net: 'CSNLN'
@@ -23,7 +24,6 @@ model:
   depth: 12
   n_resblocks: 16
   n_feats: 128
-  rgb_range: 1
   n_colors: 3
 
 trainer:                       
