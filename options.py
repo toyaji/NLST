@@ -27,8 +27,13 @@ def load_config_from_args():
     config = load_config(args.config)
     config.log.name = args.name
     config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
-    config.dataset.args.patch_size = args.patch
-    config.dataset.batch_size = args.batch
+
+    if args.patch is not None:
+        config.dataset.args.patch_size = args.patch
+
+    if args.batch is not None:
+        config.dataset.batch_size = args.batch
+
     config.dataset.test_only = args.test_only
     config.dataset.save_test_img = args.save_imgs
     config.model.chop_size = args.chop_size
