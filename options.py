@@ -18,6 +18,7 @@ def load_config_from_args():
     args.add_argument("-n", "--name", type=str, help="You can put the name for the experiment, this will be used for log file name.")
     args.add_argument("-p", "--patch", type=int, help="Patch size for data loader crop and model generation.")
     args.add_argument("-b", "--batch", type=int, help="Batch size for data laoder.")
+    args.add_argument("-s", "--scale", type=int, help="Scale factor.")
     args.add_argument("--chop_size", type=int, help="For test forward, we need to chop the input according to its memory capability.")
     args.add_argument("--test_only", action='store_true', help='set this option to test the model')
     args.add_argument("--save_imgs", action='store_true', help='set this option to test the model')
