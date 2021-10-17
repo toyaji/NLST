@@ -143,13 +143,15 @@ class HAN_RAW(nn.Module):
         scale = args.scale
         act = nn.ReLU(True)
         
-        # RGB mean for DIV2K
-        rgb_mean = (0.4488, 0.4371, 0.4040)
-        rgb_std = (1.0, 1.0, 1.0)
-        self.sub_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std)
+        # mean for zoom raw and zoom rgb
+        raw_mean = (3.7376e-02, 8.3722e-02, 2.6351e+08, 8.3683e-02)
+        raw_std = (0.0402, 0.0873, 0.0526, 0.0873)
+        rgb_mean = (0.4038, 0.3844, 0.3503)
+        rgb_std = (0.2207, 0.2100, 0.2095)
+        self.sub_mean = common.MeanShift_Raw(args.rgb_range, raw_mean, raw_std)
         
         # define head module
-        modules_head = [conv(args.n_colors, n_feats, kernel_size)]
+        modules_head = [conv(4, n_feats, kernel_size)]
 
         # define body module
         modules_body = [
@@ -161,7 +163,7 @@ class HAN_RAW(nn.Module):
 
         # define tail module - this part is different from rgb han to raw han bacuse raw files has x2 smller size of input 
         modules_tail = [
-            common.Upsampler(conv, scale, n_feats, act=False),
+            common.Upsampler(conv, scale, n_feats, act=False, raw=True),
             conv(n_feats, args.n_colors, kernel_size),
             ]
 
