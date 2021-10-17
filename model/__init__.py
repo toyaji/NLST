@@ -12,7 +12,7 @@ from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
 
-CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 25000, "HAN_RAW" : 160000, "CSNLN_RAW" : 25000, }
+CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 25000, }
 
 class LitModel(pl.LightningModule):
     def __init__(self, model_params, opt_params, data_params) -> None:
@@ -32,6 +32,7 @@ class LitModel(pl.LightningModule):
 
         # load the model
         module = import_module('model.' + self.name.lower())
+        print(model_params)
         self.model = getattr(module, self.name)(model_params)
 
         # pretrain set
@@ -50,7 +51,8 @@ class LitModel(pl.LightningModule):
         self.save_hyperparameters(opt_params)
 
         # metrics
-        self.ssim = SSIM()
+        self.val_ssim = SSIM()
+        self.test_ssim = SSIM()
 
     def forward(self, x):
         return self.model(x)
@@ -113,10 +115,13 @@ class LitModel(pl.LightningModule):
         sr = self(x)
         loss = F.mse_loss(sr, y)
         psnr = self._psnr(sr, y, self.scale, self.rgb_range)
-        ssim = _ssim(sr, y)
+        ssim = self.val_ssim(sr, y)
         self.log('valid/loss', loss, prog_bar=True)
         self.log('valid/psnr', psnr, prog_bar=True)
         self.log('valid/ssim', ssim, prog_bar=True)
+
+    def validation_epoch_end(self, outputs) -> None:
+        self.val_ssim.reset()
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         x, y, filename = batch
@@ -124,8 +129,7 @@ class LitModel(pl.LightningModule):
         sr = self.forward_chop(x, min_size=self.chop_size)
         sr = self._quantize(sr, self.rgb_range)
         psnr = self._psnr(sr, y, self.scale, self.rgb_range)
-        ssim = _ssim(sr, y)
-
+        ssim = self.test_ssim(sr, y)
         self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
 

@@ -69,19 +69,16 @@ def set_channel(*args, n_channels=3):
             img = np.expand_dims(sc.rgb2ycbcr(img)[:, :, 0], 2)
         elif n_channels == 3 and c == 1:
             img = np.concatenate([img] * n_channels, 2)
-
         return img
 
     return [_set_channel(a) for a in args]
 
 def np2Tensor(*args, rgb_range=255):
+    # FIXME it has problem, but precedent researchs used this code...
     def _np2Tensor(img):
         np_transpose = np.ascontiguousarray(img.transpose((2, 0, 1)))
         tensor = torch.from_numpy(np_transpose).float()
-
-        # normalization for rgb range
-        if rgb_range == 255:
-            tensor.mul_(1 / 255)
+        tensor.mul_(rgb_range / 255)
 
         return tensor
 

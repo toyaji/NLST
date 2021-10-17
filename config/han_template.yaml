@@ -13,7 +13,7 @@ dataset:
   num_workers: 4
   args:
     dir: "dataset"
-    patch_size: 192
+    patch_size: 96
     scale: 3
     rgb_range: 255
 
