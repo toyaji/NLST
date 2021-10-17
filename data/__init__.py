@@ -49,7 +49,7 @@ class LitDataset(LightningDataModule):
                     testsets.append(getattr(m, 'Benchmark')(**self.args, train=False, name=d))
                 else:
                     m = import_module('data.' + d.lower())
-                    valsets.append(getattr(m, d)(**self.args, train=False, name=d)) 
+                    testsets.append(getattr(m, d)(**self.args, train=False, name=d)) 
 
             self.test_set = testsets
 
