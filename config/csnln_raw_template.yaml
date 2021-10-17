@@ -4,13 +4,13 @@ log:
   log_graph: False
 
 dataset:
-  train_data: ["DIV2K", ]              # DIV2K, BSD500, ...
-  test_data: ['Set5', 'Set14', 'BSD100', 'Urban100',]                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+  train_data: ["ZoomRaw2RGB", ]              # DIV2K, BSD500, ...
+  test_data: ["ZoomRaw2RGB", ]                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
   batch_size: 2
   shuffle: True
-  num_workers: 4
+  num_workers: 8
   args:
     dir: "dataset"
     patch_size: 64
@@ -18,7 +18,7 @@ dataset:
     rgb_range: 1
 
 model:
-  net: 'CSNLN'
+  net: 'CSNLN_RAW'
   pretrain: True       
   depth: 12
   n_resblocks: 16

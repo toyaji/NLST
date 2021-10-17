@@ -26,7 +26,7 @@ class ZoomRaw2RGB(SRData):
 
         assert self.dir_hr.exists(), "HR input data path does not exist!"
 
-        self.ext = ("arw", "arw")
+        self.ext = ("ARW", "ARW")
 
     def _scan(self):
         self.hr_pathes = sorted(list(self.dir_hr.glob("*." + self.ext[0])))

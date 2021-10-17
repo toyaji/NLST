@@ -94,14 +94,18 @@ class CSNLN_RAW(nn.Module):
         common.BasicBlock(conv,n_feats, n_feats, kernel_size,stride=1,bias=True,bn=False,act=nn.PReLU())]
 
         # define Self-Exemplar Mining Cell
-        self.SEM = RecurrentProjection(n_feats,scale = scale*2)
+        self.SEM = RecurrentProjection(n_feats,scale = scale)
 
         # define tail module
         m_tail = [
-            nn.Conv2d(
-                n_feats*self.depth, args.n_colors, kernel_size,
-                padding=(kernel_size//2)
-            )
+            #nn.Conv2d(
+            #    n_feats*self.depth, n_feats, kernel_size,
+            #    padding=(kernel_size//2)),
+
+            # for upsample for raw image
+            conv(n_feats*self.depth, 4 * n_feats, kernel_size), 
+            nn.PixelShuffle(2),
+            conv(n_feats, args.n_colors, kernel_size),
         ]
 
         self.add_mean = common.MeanShift(args.rgb_range, rgb_mean, rgb_std, 1)
@@ -114,7 +118,7 @@ class CSNLN_RAW(nn.Module):
         x = self.head(x)
         bag = []
         for i in range(self.depth):
-            x, h_estimate = self.SEM(x)
+            x, h_estimate = self.SEM(x) 
             bag.append(h_estimate)
         h_feature = torch.cat(bag,dim=1)
         h_final = self.tail(h_feature)

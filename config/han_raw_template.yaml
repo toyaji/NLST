@@ -8,9 +8,9 @@ dataset:
   test_data: ['ZoomRaw2RGB']                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
-  batch_size: 2
+  batch_size: 12
   shuffle: True
-  num_workers: 4
+  num_workers: 12
   args:
     dir: "dataset"
     patch_size: 96
@@ -29,8 +29,8 @@ model:
 
 trainer:                       
   gpus: 1
-  max_epochs: 200
-  accumulate_grad_batches: 4
+  max_epochs: 250
+  accumulate_grad_batches: 1
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 3
   limit_val_batches: 0.5
@@ -44,7 +44,7 @@ callback:
   earlly_stop_patience: 20
 
 optimizer:
-  learning_rate: 1.0e-5
+  learning_rate: 1.0e-2
   weight_decay: 5.0e-3
-  patience: 5
+  patience: 20
   factor: 0.5                  # lr schedule decay factor

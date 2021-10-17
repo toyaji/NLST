@@ -19,6 +19,7 @@ def load_config_from_args():
     args.add_argument("-p", "--patch", type=int, help="Patch size for data loader crop and model generation.")
     args.add_argument("-b", "--batch", type=int, help="Batch size for data laoder.")
     args.add_argument("-s", "--scale", type=int, help="Scale factor.")
+    args.add_argument("-w", "--workers", type=int, help="Number of worker for dataload")
     args.add_argument("--chop_size", type=int, help="For test forward, we need to chop the input according to its memory capability.")
     args.add_argument("--test_only", action='store_true', help='set this option to test the model')
     args.add_argument("--save_imgs", action='store_true', help='set this option to test the model')
@@ -33,6 +34,9 @@ def load_config_from_args():
 
     if args.batch is not None:
         config.dataset.batch_size = args.batch
+
+    if args.workers is not None:
+        config.dataset.num_workers = args.workers
 
     config.dataset.test_only = args.test_only
     config.dataset.save_test_img = args.save_imgs
