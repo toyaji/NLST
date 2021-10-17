@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import rawpy
 from pathlib import Path
 from .srdata import SRData
 from . import common
@@ -19,33 +20,39 @@ class ZoomRaw2RGB(SRData):
         assert self.apath.exists(), "Given base data dir path is wrong!: {}".format(self.apath)
 
         if self.train:
-            self.dir_hr = self.apath / 'train' / 'rgb_HR'
-            self.dir_lr = self.apath / 'train' / 'raw_LR_binary'
+            self.dir_hr = self.apath / 'train' / 'raw_HR'
         else:
-            self.dir_hr = self.apath / 'test' / 'rgb_HR'
-            self.dir_lr = self.apath / 'test' / 'raw_LR_binary'     
+            self.dir_hr = self.apath / 'test' / 'raw_HR'    
 
         assert self.dir_hr.exists(), "HR input data path does not exist!"
-        assert self.dir_lr.exists(), "LR input data path does not exist!"
 
-        self.ext = ("jpg", "npy")
+        self.ext = ("arw", "arw")
+
+    def _scan(self):
+        self.hr_pathes = sorted(list(self.dir_hr.glob("*." + self.ext[0])))
 
     def _load_file(self, idx):
         f_hr = self.hr_pathes[idx]
-        f_lr = self.lr_pathes[idx]
         filename = f_hr.name
-        hr = cv2.imread(str(f_hr))
-        hr = cv2.cvtColor(hr, cv2.COLOR_BGR2RGB)    
-        lr = np.load(f_lr)
-        lr = lr[:, :, :3]
-        return lr*255, hr, filename
+        black_lv=512; white_lv=16383
+        with rawpy.imread(str(f_hr)) as r:
+            hr_bayer = r.raw_image_visible.astype(np.float32)
+            hr_bayer = (hr_bayer - black_lv) / (white_lv - black_lv)
+            #wb = common.compute_wb(r)
+            hr_rgb = r.postprocess(no_auto_bright=False, use_camera_wb=True, output_bps=8)
+            hr_raw = common.get_4ch(hr_bayer)
+        
+            h, w = hr_raw.shape[:2]
+            lr_raw = cv2.resize(hr_raw, (w // self.scale, h // self.scale), interpolation=cv2.INTER_LINEAR)
+            hr_rgb = hr_rgb / 255
+        return lr_raw, hr_rgb, filename
 
     def get_patch(self, lr, hr):
         scale = self.scale * 2
         if self.patch_size > 0:
             lr, hr = common.get_patch(
                 lr, hr,
-                patch_size=self.patch_size,
+                patch_size=self.patch_size,    # raw bayer has x2 smaller size
                 scale=scale,
                 input_large=self.input_large
             )
