@@ -32,7 +32,6 @@ class LitModel(pl.LightningModule):
 
         # load the model
         module = import_module('model.' + self.name.lower())
-        print(model_params)
         self.model = getattr(module, self.name)(model_params)
 
         # pretrain set
@@ -41,9 +40,9 @@ class LitModel(pl.LightningModule):
                 path = 'pretrain/{name}/{name}_X{scale}.pt'.format(name=self.name, scale=self.scale)
                 dicts = torch.load(path)
                 msg = self.model.load_state_dict(dicts)
-                print(msg)
+                print("Loading pretrained stat dict: ", msg)
             except Exception as e: 
-                print(e, "Loading pretrained model got error. It will start without pretrained weight.")
+                print(e, "Loading pretrained stat dict: Cannot find the pretrained file or faile to load.")
                 pass
         
         # save hprams for log
@@ -51,6 +50,8 @@ class LitModel(pl.LightningModule):
         self.save_hyperparameters(opt_params)
 
         # metrics
+        self.val_psnr = PSNR()
+        self.test_psnr = PSNR()
         self.val_ssim = SSIM()
         self.test_ssim = SSIM()
 
@@ -114,7 +115,9 @@ class LitModel(pl.LightningModule):
         x, y, _ = batch
         sr = self(x)
         loss = F.mse_loss(sr, y)
-        psnr = self._psnr(sr, y, self.scale, self.rgb_range)
+        sr = self._quantize(sr, self.rgb_range)
+        sr, y = self.rgb2ycbcr(sr, y, scale=self.scale, rgb_range=self.rgb_range)
+        psnr = self.val_psnr(sr, y)
         ssim = self.val_ssim(sr, y)
         self.log('valid/loss', loss, prog_bar=True)
         self.log('valid/psnr', psnr, prog_bar=True)
@@ -122,13 +125,15 @@ class LitModel(pl.LightningModule):
 
     def validation_epoch_end(self, outputs) -> None:
         self.val_ssim.reset()
+        self.val_psnr.reset()
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         x, y, filename = batch
         dataset_name = self.test_data[dataloader_idx]
         sr = self.forward_chop(x, min_size=self.chop_size)
         sr = self._quantize(sr, self.rgb_range)
-        psnr = self._psnr(sr, y, self.scale, self.rgb_range)
+        sr, y = self.rgb2ycbcr(sr, y, scale=self.scale, rgb_range=self.rgb_range)
+        psnr = self.test_psnr(sr, y)
         ssim = self.test_ssim(sr, y)
         self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
@@ -137,6 +142,10 @@ class LitModel(pl.LightningModule):
             self._img_save(sr.clone().detach(), filename[0], dataset_name)
 
         return psnr, ssim
+
+    def test_epoch_end(self, outputs) -> None:
+        self.test_ssim.reset()
+        self.test_psnr.reset() 
 
     @staticmethod
     def _img_save(sr, filename, dataset_name):
@@ -155,7 +164,7 @@ class LitModel(pl.LightningModule):
 
     @staticmethod
     def _psnr(sr, hr, scale, rgb_range):
-        # TODO make into custom metrics class 
+        # This psnr function is old legacy from other researches. 
         diff = (sr - hr) / rgb_range
         shave = scale
         if diff.size(1) > 1:
@@ -167,6 +176,20 @@ class LitModel(pl.LightningModule):
         mse = valid.pow(2).mean()
 
         return -10 * math.log10(mse)
+
+    @staticmethod
+    def rgb2ycbcr(*args, scale, rgb_range=255):
+        def _rgb2ycbcr(img):
+            shave = scale
+            if img.size(1) > 1:
+                gray_coeffs = [65.738, 129.057, 25.064]
+                convert = img.new_tensor(gray_coeffs).view(1, 3, 1, 1) / 256
+                img = img.mul(convert)
+
+            valid = img[..., shave:-shave, shave:-shave]
+            return valid
+
+        return [_rgb2ycbcr(a) for a in args]
 
     @staticmethod
     def _quantize(img, rgb_range):
