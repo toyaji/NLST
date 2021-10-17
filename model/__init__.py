@@ -12,7 +12,7 @@ from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
 
-CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 25000, "HAN_RAW" : 160000, }
+CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 25000, "HAN_RAW" : 160000, "CSNLN_RAW" : 25000, }
 
 class LitModel(pl.LightningModule):
     def __init__(self, model_params, opt_params, data_params) -> None:
