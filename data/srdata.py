@@ -42,9 +42,6 @@ class SRData(Dataset):
         self.dir_lr = self.apath / 'LR_bicubic'
         self.ext = ('png', 'png')
 
-        # TODO 이거 어떻게 쓰는건지... 확인 필요
-        if self.input_large: self.dir_lr += 'L'
-
     def __getitem__(self, idx):
         lr, hr, filename = self._load_file(idx)
         pair = self.get_patch(lr, hr)

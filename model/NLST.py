@@ -1,10 +1,9 @@
 from random import sample
 import torch
 from torch import nn
-from torch.nn.modules.pixelshuffle import PixelShuffle
 
-from model.STN import SpatialTransformer
-from model.NLRN import ResidualBlcok
+from .stn import SpatialTransformer
+from .nlrn import ResidualBlcok
 
 
 
@@ -31,7 +30,6 @@ class NLST(nn.Module):
         self.schedule = st_schedule
         self.upsample = upsample
 
-        # FIXME 요거 데이터 맞춰야함.... RGB mean for DIV2K
         rgb_mean = (0.4488, 0.4371, 0.4040)
         rgb_std = (1.0, 1.0, 1.0)
         self.sub_mean = MeanShift(1, rgb_mean, rgb_std)
@@ -90,7 +88,6 @@ class NLST(nn.Module):
 
 
 class MeanShift(nn.Conv2d):
-    # TODO 이거는 데이터 mean 이랑 맞춰야함..
     def __init__(
         self, rgb_range,
         rgb_mean=(0.4488, 0.4371, 0.4040), rgb_std=(1.0, 1.0, 1.0), sign=-1):
