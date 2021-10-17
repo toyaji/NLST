@@ -11,7 +11,7 @@ from pytorch_lightning.metrics.functional import ssim as _ssim
 from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
-
+# You can adjust following chop size fit to your GPU memory.
 CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 4500, }
 
 class LitModel(pl.LightningModule):
@@ -124,6 +124,7 @@ class LitModel(pl.LightningModule):
         self.log('valid/ssim', ssim, prog_bar=True)
 
     def validation_epoch_end(self, outputs) -> None:
+        # to prevent memory leak 
         self.val_ssim.reset()
         self.val_psnr.reset()
 
@@ -144,6 +145,7 @@ class LitModel(pl.LightningModule):
         return psnr, ssim
 
     def test_epoch_end(self, outputs) -> None:
+        # to prevent memory leak 
         self.test_ssim.reset()
         self.test_psnr.reset() 
 
