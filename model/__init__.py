@@ -133,11 +133,15 @@ class LitModel(pl.LightningModule):
         dataset_name = self.test_data[dataloader_idx]
         sr = self.forward_chop(x, min_size=self.chop_size)
         sr = self._quantize(sr, self.rgb_range)
+        
+        # TODO check why legacy psnr fucntion and pl metric psnr show certain difference.
+        legacy_psnr = self._psnr(sr, y, self.scale, self.rgb_range)
         sr, y = self.rgb2ycbcr(sr, y, scale=self.scale, rgb_range=self.rgb_range)
         psnr = self.test_psnr(sr, y)
         ssim = self.test_ssim(sr, y)
         self.log('test/{}/psnr'.format(dataset_name), psnr, prog_bar=True)
         self.log('test/{}/ssim'.format(dataset_name), ssim, prog_bar=True)
+        self.log('test/{}/legacy_psnr'.format(dataset_name), legacy_psnr, prog_bar=True)
 
         if self.save_test_img:
             self._img_save(sr.clone().detach(), filename[0], dataset_name)
