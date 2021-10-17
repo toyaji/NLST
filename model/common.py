@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def default_conv(in_channels, out_channels, kernel_size,stride=1, bias=True):
+def default_conv(in_channels, out_channels, kernel_size, stride=1, bias=True):
     return nn.Conv2d(
         in_channels, out_channels, kernel_size,
-        padding=(kernel_size//2),stride=stride, bias=bias)
+        padding=(kernel_size//2), stride=stride, bias=bias)
 
 class MeanShift(nn.Conv2d):
     def __init__(
@@ -63,7 +63,7 @@ class Upsampler(nn.Sequential):
         m = []
         if (scale & (scale - 1)) == 0:    # Is scale = 2^n?
             for _ in range(int(math.log(scale, 2))):
-                m.append(conv(n_feats, 4 * n_feats, 3, bias))
+                m.append(conv(n_feats, 4 * n_feats, 3, bias=bias))
                 m.append(nn.PixelShuffle(2))
                 if bn:
                     m.append(nn.BatchNorm2d(n_feats))
@@ -73,7 +73,7 @@ class Upsampler(nn.Sequential):
                     m.append(nn.PReLU(n_feats))
 
         elif scale == 3:
-            m.append(conv(n_feats, 9 * n_feats, 3, bias))
+            m.append(conv(n_feats, 9 * n_feats, 3, bias=bias))
             m.append(nn.PixelShuffle(3))
             if bn:
                 m.append(nn.BatchNorm2d(n_feats))
@@ -85,4 +85,5 @@ class Upsampler(nn.Sequential):
             raise NotImplementedError
 
         super(Upsampler, self).__init__(*m)
+
 

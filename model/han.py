@@ -1,4 +1,4 @@
-from model import common_han as common
+from model import common
 import torch
 import torch.nn as nn
 
@@ -199,7 +199,6 @@ class HAN(nn.Module):
         
         res += x
         #res = self.csa(res)
-
         x = self.tail(res)
         x = self.add_mean(x)
 

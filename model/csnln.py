@@ -1,4 +1,4 @@
-from model import common_csnln as common
+from model import common
 import torch.nn as nn
 import torch
 from model.attention import CrossScaleAttention,NonLocalAttention
