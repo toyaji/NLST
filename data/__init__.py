@@ -18,6 +18,7 @@ class LitDataset(LightningDataModule):
 
         self.train_data = train_data
         self.test_data = test_data
+        self.benchmark = ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.num_workers = num_workers
@@ -43,8 +44,12 @@ class LitDataset(LightningDataModule):
         if stage == "test":
             testsets = []
             for d in self.test_data:
-                m = import_module('data.benchmark')
-                testsets.append(getattr(m, 'Benchmark')(**self.args, train=False, name=d))
+                if d in self.benchmark:
+                    m = import_module('data.benchmark')
+                    testsets.append(getattr(m, 'Benchmark')(**self.args, train=False, name=d))
+                else:
+                    m = import_module('data.' + d.lower())
+                    valsets.append(getattr(m, d)(**self.args, train=False, name=d)) 
 
             self.test_set = testsets
 
