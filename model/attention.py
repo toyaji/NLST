@@ -9,6 +9,7 @@ from torchvision import utils as vutils
 from model import common
 from model.utils.tools import extract_image_patches,reduce_mean, reduce_sum, same_padding
 
+
 #in-scale non-local attention
 class NonLocalAttention(nn.Module):
     """

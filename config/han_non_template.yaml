@@ -5,7 +5,7 @@ log:
 
 dataset:
   train_data: ["DIV2K", ]              # DIV2K, BSD500, ...
-  test_data: ['Set5', 'Set14', ]                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+  test_data: ['Set5', 'Set14']                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
   batch_size: 2
@@ -14,20 +14,22 @@ dataset:
   args:
     dir: "dataset"
     patch_size: 64
-    scale: 2
+    scale: 3
     rgb_range: 1
 
 model:
-  net: 'CSNLN'
+  net: 'HAN_NON'
   pretrain: True       
-  depth: 12
-  n_resblocks: 16
-  n_feats: 128
+  n_resgroups: 4
+  n_resblocks: 5
+  n_feats: 64
+  reduction: 16
   n_colors: 3
+  res_scale: 1
 
 trainer:                       
   gpus: 1
-  max_epochs: 100
+  max_epochs: 200
   accumulate_grad_batches: 4
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 3

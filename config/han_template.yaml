@@ -8,7 +8,7 @@ dataset:
   test_data: ['Set5', 'Set14']                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
-  batch_size: 2
+  batch_size: 4
   shuffle: True
   num_workers: 4
   args:
@@ -37,7 +37,7 @@ trainer:
   #profiler: "pytorch"
   log_gpu_memory: "all"
   #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
-  #fast_dev_run: 1          # This is for test - it will cause error for validation step
+  fast_dev_run: 1          # This is for test - it will cause error for validation step
 
 callback:
   save_top_k: 3

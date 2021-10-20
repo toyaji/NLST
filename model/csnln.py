@@ -1,7 +1,8 @@
-from model import common
 import torch.nn as nn
 import torch
+from model import common
 from model.attention import CrossScaleAttention,NonLocalAttention
+
 def make_model(args, parent=False):
     return CSNLN(args)
 
@@ -113,3 +114,19 @@ class CSNLN(nn.Module):
         h_feature = torch.cat(bag,dim=1)
         h_final = self.tail(h_feature)
         return self.add_mean(h_final)
+
+
+if __name__ == '__main__':
+    from easydict import EasyDict
+    param = EasyDict({'depth': 12,
+                     'n_resblocks': 16,
+                     'n_feats': 128,
+                     'scale': 2,
+                     'rgb_range': 1,
+                     'n_colors': 3,
+                     'res_scale': 1})
+    
+    han = CSNLN(param).cuda()
+    sample = torch.zeros(2, 3, 64, 64).cuda()
+    
+    han.forward(sample)
