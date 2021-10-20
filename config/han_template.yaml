@@ -8,18 +8,18 @@ dataset:
   test_data: ['Set5', 'Set14']                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
-  batch_size: 2
+  batch_size: 12
   shuffle: True
-  num_workers: 4
+  num_workers: 16
   args:
     dir: "dataset"
     patch_size: 96
-    scale: 3
+    scale: 2
     rgb_range: 255
 
 model:
   net: 'HAN'
-  pretrain: True       
+  pretrain: False       
   n_resgroups: 10
   n_resblocks: 20
   n_feats: 64
@@ -29,22 +29,22 @@ model:
 
 trainer:                       
   gpus: 1
-  max_epochs: 200
-  accumulate_grad_batches: 4
+  max_epochs: 250
+  accumulate_grad_batches: 2
   gradient_clip_val: 0.5
   #check_val_every_n_epoch: 3
   limit_val_batches: 0.5
   #profiler: "pytorch"
   log_gpu_memory: "all"
-  #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
+  #resume_from_checkpoint: "/logs/csnln_x2_epoch200_2/log_2110180842/checkpoints/epoch=53-step=6749.ckpt"
   #fast_dev_run: 1          # This is for test - it will cause error for validation step
 
 callback:
   save_top_k: 3
-  earlly_stop_patience: 20
+  earlly_stop_patience: 50
 
 optimizer:
-  learning_rate: 1.0e-5
-  weight_decay: 5.0e-3
-  patience: 5
+  learning_rate: 1.0e-6
+  weight_decay: 0
+  patience: 7
   factor: 0.5                  # lr schedule decay factor

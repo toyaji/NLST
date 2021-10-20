@@ -44,6 +44,8 @@ class LitModel(pl.LightningModule):
             except Exception as e: 
                 print(e, "Loading pretrained stat dict: Cannot find the pretrained file or faile to load.")
                 pass
+        else:
+            print("Training starts from the scratch without pretrain state dict.")
         
         # save hprams for log
         self.save_hyperparameters(model_params)
@@ -133,7 +135,7 @@ class LitModel(pl.LightningModule):
         dataset_name = self.test_data[dataloader_idx]
         sr = self.forward_chop(x, min_size=self.chop_size)
         sr = self._quantize(sr, self.rgb_range)
-        
+
         # TODO check why legacy psnr fucntion and pl metric psnr show certain difference.
         legacy_psnr = self._psnr(sr, y, self.scale, self.rgb_range)
         sr, y = self.rgb2ycbcr(sr, y, scale=self.scale, rgb_range=self.rgb_range)
