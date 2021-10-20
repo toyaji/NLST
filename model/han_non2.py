@@ -176,7 +176,7 @@ class HAN_NON2(nn.Module):
         self.body = nn.Sequential(*modules_body)
         self.csa = CSAM_Module(n_feats)
         self.la = LAM_Module(n_feats)
-        self.last_conv = nn.Conv2d(n_feats*11, n_feats, 3, 1, 1)
+        self.last_conv = nn.Conv2d(n_feats*(n_resgroups+1), n_feats, 3, 1, 1)
         self.last = nn.Conv2d(n_feats*2, n_feats, 3, 1, 1)
         self.tail = nn.Sequential(*modules_tail)
 
