@@ -1,6 +1,32 @@
-from model import common
+from easydict import EasyDict
+from . import common
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+class NonLocalAttention(nn.Module):
+    # TODO reduce the memeory first
+    def __init__(self, channel=128, reduction=8, ksize=3, scale=3, stride=1, softmax_scale=10, average=True, conv=common.default_conv):
+        super(NonLocalAttention, self).__init__()
+        self.conv_match1 = common.BasicBlock(conv, channel, channel//reduction, 1, bn=False, act=nn.PReLU())
+        self.conv_match2 = common.BasicBlock(conv, channel, channel//reduction, 1, bn=False, act = nn.PReLU())
+        self.conv_assembly = common.BasicBlock(conv, channel, channel, 1, bn=False, act=nn.PReLU())
+        self.softmax  = nn.Softmax(dim=2)
+
+    def forward(self, input):
+        x_embed_1 = self.conv_match1(input)
+        x_embed_2 = self.conv_match2(input)
+        x_assembly = self.conv_assembly(input)
+
+        N,C,H,W = x_embed_1.shape
+        x_embed_1 = x_embed_1.permute(0,2,3,1).view((N,H*W,C))
+        x_embed_2 = x_embed_2.view(N,C,H*W)
+        score = torch.bmm(x_embed_1, x_embed_2)
+        score = self.softmax(score)
+        x_assembly = x_assembly.view(N,-1,H*W).permute(0,2,1)
+        x_final = torch.bmm(score, x_assembly)
+        x_final = x_final.permute(0,2,1).view(N,-1,H,W)
+        return x_final
 
 ## Channel Attention (CA) Layer
 class CALayer(nn.Module):
@@ -65,6 +91,7 @@ class CSAM_Module(nn.Module):
         self.gamma = nn.Parameter(torch.zeros(1))
         #self.softmax  = nn.Softmax(dim=-1)
         self.sigmoid = nn.Sigmoid()
+
     def forward(self,x):
         """
             inputs :
@@ -104,7 +131,7 @@ class RCAB(nn.Module):
             modules_body.append(conv(n_feat, n_feat, kernel_size, bias=bias))
             if bn: modules_body.append(nn.BatchNorm2d(n_feat))
             if i == 0: modules_body.append(act)
-        modules_body.append(CALayer(n_feat, reduction))
+        modules_body.append(NonLocalAttention(n_feat, reduction))
         self.body = nn.Sequential(*modules_body)
         self.res_scale = res_scale
 
@@ -118,23 +145,24 @@ class RCAB(nn.Module):
 class ResidualGroup(nn.Module):
     def __init__(self, conv, n_feat, kernel_size, reduction, act, res_scale, n_resblocks):
         super(ResidualGroup, self).__init__()
-        modules_body = []
-        modules_body = [
-            RCAB(
-                conv, n_feat, kernel_size, reduction, bias=True, bn=False, act=nn.ReLU(True), res_scale=1) \
-            for _ in range(n_resblocks)]
-        modules_body.append(conv(n_feat, n_feat, kernel_size))
-        self.body = nn.Sequential(*modules_body)
+
+        self.n_resblocks = n_resblocks
+        self.tail = conv(n_feat, n_feat, kernel_size)
+        self.body = RCAB(conv, n_feat, kernel_size, reduction, bias=True, 
+                        bn=False, act=nn.ReLU(True), res_scale=1)
 
     def forward(self, x):
-        res = self.body(x)
+        res = x.clone()
+        for _ in range(self.n_resblocks):
+             res = self.body(res)
+
         res += x
         return res
 
 ## Holistic Attention Network (HAN)
-class HAN(nn.Module):
+class HAN_NON(nn.Module):
     def __init__(self, args, conv=common.default_conv):
-        super(HAN, self).__init__()
+        super(HAN_NON, self).__init__()
         
         n_resgroups = args.n_resgroups
         n_resblocks = args.n_resblocks
@@ -171,7 +199,7 @@ class HAN(nn.Module):
         self.body = nn.Sequential(*modules_body)
         self.csa = CSAM_Module(n_feats)
         self.la = LAM_Module(n_feats)
-        self.last_conv = nn.Conv2d(n_feats*11, n_feats, 3, 1, 1)
+        self.last_conv = nn.Conv2d(n_feats*(n_resgroups + 1), n_feats, 3, 1, 1)
         self.last = nn.Conv2d(n_feats*2, n_feats, 3, 1, 1)
         self.tail = nn.Sequential(*modules_tail)
 
@@ -187,11 +215,13 @@ class HAN(nn.Module):
                 res1 = res.unsqueeze(1)
             else:
                 res1 = torch.cat([res.unsqueeze(1),res1],1)
+
         #res = self.body(x)
         out1 = res
         #res3 = res.unsqueeze(1)
         #res = torch.cat([res1,res3],1)
         res = self.la(res1)
+        print(res.size())
         out2 = self.last_conv(res)
 
         out1 = self.csa(out1)
@@ -242,3 +272,19 @@ class HAN(nn.Module):
                 raise KeyError('missing keys in state_dict: "{}"'.format(name))
 
         return "<All keys matched successfully>"
+
+
+if __name__ == '__main__':
+    param = EasyDict({'n_resgroups': 3,
+                     'n_resblocks': 10,
+                     'n_feats': 64,
+                     'reduction': 8,
+                     'scale': 2,
+                     'rgb_range': 1,
+                     'n_colors': 3,
+                     'res_scale': 1})
+    
+    han = HAN_NON(param).cuda()
+    sample = torch.zeros(2, 3, 64, 64).cuda()
+    
+    han.forward(sample)

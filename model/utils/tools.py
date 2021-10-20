@@ -56,6 +56,7 @@ def extract_image_patches(images, ksizes, strides, rates, padding='same'):
                              stride=strides)
     patches = unfold(images)
     return patches  # [N, C*k*k, L], L is the total number of such blocks
+    
 def reduce_mean(x, axis=None, keepdim=False):
     if not axis:
         axis = range(len(x.shape))

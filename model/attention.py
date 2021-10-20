@@ -7,16 +7,19 @@ from PIL import Image
 from torchvision import transforms
 from torchvision import utils as vutils
 from model import common
-from model.utils.tools import extract_image_patches,\
-    reduce_mean, reduce_sum, same_padding
+from model.utils.tools import extract_image_patches,reduce_mean, reduce_sum, same_padding
+
 
 #in-scale non-local attention
 class NonLocalAttention(nn.Module):
+    """
+    TODO reduction 조정해서 memory 조절하는듯 ...
+    """
     def __init__(self, channel=128, reduction=2, ksize=3, scale=3, stride=1, softmax_scale=10, average=True, conv=common.default_conv):
         super(NonLocalAttention, self).__init__()
         self.conv_match1 = common.BasicBlock(conv, channel, channel//reduction, 1, bn=False, act=nn.PReLU())
         self.conv_match2 = common.BasicBlock(conv, channel, channel//reduction, 1, bn=False, act = nn.PReLU())
-        self.conv_assembly = common.BasicBlock(conv, channel, channel, 1,bn=False, act=nn.PReLU())
+        self.conv_assembly = common.BasicBlock(conv, channel, channel, 1, bn=False, act=nn.PReLU())
         
     def forward(self, input):
         x_embed_1 = self.conv_match1(input)
@@ -32,6 +35,7 @@ class NonLocalAttention(nn.Module):
         x_final = torch.matmul(score, x_assembly)
         return x_final.permute(0,2,1).view(N,-1,H,W)
 
+
 #cross-scale non-local attention
 class CrossScaleAttention(nn.Module):
     def __init__(self, channel=128, reduction=2, ksize=3, scale=3, stride=1, softmax_scale=10, average=True, conv=common.default_conv):
@@ -44,12 +48,11 @@ class CrossScaleAttention(nn.Module):
         self.average = average
         escape_NaN = torch.FloatTensor([1e-4])
         self.register_buffer('escape_NaN', escape_NaN)
+
         self.conv_match_1 = common.BasicBlock(conv, channel, channel//reduction, 1, bn=False, act=nn.PReLU())
         self.conv_match_2 = common.BasicBlock(conv, channel, channel//reduction, 1, bn=False, act=nn.PReLU())
         self.conv_assembly = common.BasicBlock(conv, channel, channel, 1, bn=False, act=nn.PReLU())
-        #self.register_buffer('fuse_weight', fuse_weight)
-
-        
+        #self.register_buffer('fuse_weight', fuse_weight)      
 
     def forward(self, input):
         #get embedding
@@ -58,13 +61,14 @@ class CrossScaleAttention(nn.Module):
         
         # b*c*h*w
         shape_input = list(embed_w.size())   # b*c*h*w
-        input_groups = torch.split(match_input,1,dim=0)
+        input_groups = torch.split(match_input, 1, dim=0)  # make batch 1 
+
         # kernel size on input for matching 
-        kernel = self.scale*self.ksize
+        kernel = self.scale * self.ksize
         
         # raw_w is extracted for reconstruction 
         raw_w = extract_image_patches(embed_w, ksizes=[kernel, kernel],
-                                      strides=[self.stride*self.scale,self.stride*self.scale],
+                                      strides=[self.stride*self.scale, self.stride*self.scale],
                                       rates=[1, 1],
                                       padding='same') # [N, C*k*k, L]
         # raw_shape: [N, C, k, k, L]
@@ -74,7 +78,7 @@ class CrossScaleAttention(nn.Module):
         
     
         # downscaling X to form Y for cross-scale matching
-        ref  = F.interpolate(input, scale_factor=1./self.scale, mode='bilinear')
+        ref = F.interpolate(input, scale_factor=1./self.scale, mode='bilinear')
         ref = self.conv_match_2(ref)
         w = extract_image_patches(ref, ksizes=[self.ksize, self.ksize],
                                   strides=[self.stride, self.stride],
@@ -105,7 +109,7 @@ class CrossScaleAttention(nn.Module):
             xi = same_padding(xi, [self.ksize, self.ksize], [1, 1], [1, 1])  # xi: 1*c*H*W
             yi = F.conv2d(xi, wi_normed, stride=1)   # [1, L, H, W] L = shape_ref[2]*shape_ref[3]
 
-            yi = yi.view(1,shape_ref[2] * shape_ref[3], shape_input[2], shape_input[3])  # (B=1, C=32*32, H=32, W=32)
+            yi = yi.view(1, shape_ref[2] * shape_ref[3], shape_input[2], shape_input[3])  # (B=1, C=32*32, H=32, W=32)
             # rescale matching score
             yi = F.softmax(yi*scale, dim=1)
             if self.average == False:

@@ -4,8 +4,13 @@ log:
   log_graph: False
 
 dataset:
+<<<<<<< HEAD
   train_data: ["DIV2K", "BSD500"]              # DIV2K, BSD500, ...
   test_data: ['Set5', 'Set14', 'BSD100', 'Urban100',]                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+=======
+  train_data: ["DIV2K", ]              # DIV2K, BSD500, ...
+  test_data: ['Set5', 'Set14', ]                  # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+>>>>>>> 2e669844074352af63e528ca1c5b2164e450a305
   save_test_img: False
   test_only: False
   batch_size: 2
@@ -34,8 +39,13 @@ trainer:
   limit_val_batches: 0.5
   #profiler: "pytorch"
   log_gpu_memory: "all"
+<<<<<<< HEAD
   resume_from_checkpoint: "logs/csnln_x2_epoch200_2/log_2110180842/checkpoints/epoch=53-step=6749.ckpt"
   #fast_dev_run: 1          # This is for test - it will cause error for validation step
+=======
+  #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
+  fast_dev_run: 1          # This is for test - it will cause error for validation step
+>>>>>>> 2e669844074352af63e528ca1c5b2164e450a305
 
 callback:
   save_top_k: 3
