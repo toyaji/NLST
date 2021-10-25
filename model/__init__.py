@@ -100,7 +100,8 @@ class LitModel(pl.LightningModule):
     def configure_optimizers(self):
         optimazier = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         lr_scheduler = {
-            'scheduler': ReduceLROnPlateau(optimazier, factor=self.factor, patience=self.patience),
+            'scheduler': ReduceLROnPlateau(optimazier, factor=self.factor, patience=self.patience,
+                                           cooldown=10, threshold=1e-8, min_lr=1e-8 ),
             'monitor': "valid/loss",
             'name': 'leraning_rate'
         }
