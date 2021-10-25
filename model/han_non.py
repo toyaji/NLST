@@ -207,21 +207,16 @@ class HAN_NON(nn.Module):
         x = self.sub_mean(x)
         x = self.head(x)
         res = x
-        #pdb.set_trace()
+
         for name, midlayer in self.body._modules.items():
             res = midlayer(res)
-            #print(name)
             if name=='0':
                 res1 = res.unsqueeze(1)
             else:
                 res1 = torch.cat([res.unsqueeze(1),res1],1)
 
-        #res = self.body(x)
         out1 = res
-        #res3 = res.unsqueeze(1)
-        #res = torch.cat([res1,res3],1)
         res = self.la(res1)
-        print(res.size())
         out2 = self.last_conv(res)
 
         out1 = self.csa(out1)
@@ -229,7 +224,6 @@ class HAN_NON(nn.Module):
         res = self.last(out)
         
         res += x
-        #res = self.csa(res)
         x = self.tail(res)
         x = self.add_mean(x)
 
