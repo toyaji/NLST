@@ -25,7 +25,9 @@ def main(config):
         logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
     checkpoint_callback = ModelCheckpoint(monitor="valid/loss", save_top_k=config.callback.save_top_k)
-    early_stop_callback = EarlyStopping(monitor="valid/loss", patience=config.callback.earlly_stop_patience)
+    early_stop_callback = EarlyStopping(monitor="valid/loss", 
+                                        patience=config.callback.earlly_stop_patience, 
+                                        min_delta=config.callback.min_delta)
     lr_callback = LearningRateMonitor(logging_interval='epoch')
 
     trainer = Trainer(logger=logger, 
