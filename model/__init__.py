@@ -23,6 +23,7 @@ class LitModel(pl.LightningModule):
         self.scale = model_params.scale
         self.rgb_range = model_params.rgb_range
         self.lr = opt_params.learning_rate
+        self.min_lr = opt_params.min_lr
         self.weight_decay = opt_params.weight_decay
         self.patience = opt_params.patience
         self.factor = opt_params.factor
@@ -101,7 +102,7 @@ class LitModel(pl.LightningModule):
         optimazier = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         lr_scheduler = {
             'scheduler': ReduceLROnPlateau(optimazier, factor=self.factor, patience=self.patience,
-                                           cooldown=10, threshold=1e-8, min_lr=1e-8 ),
+                                           cooldown=10, min_lr=self.min_lr ),
             'monitor': "valid/loss",
             'name': 'leraning_rate'
         }
