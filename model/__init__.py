@@ -138,9 +138,11 @@ class LitModel(pl.LightningModule):
         sr = self._quantize(sr, self.rgb_range)
         sr, y = self.rgb2ycbcr(sr, y, scale=self.scale, rgb_range=self.rgb_range)
         psnr = self.val_psnr(sr, y)
+        legacy_psnr = self._psnr(sr, y, self.scale, self.rgb_range)
         ssim = self.val_ssim(sr, y)
         self.log('valid/loss', loss, prog_bar=True)
         self.log('valid/psnr', psnr, prog_bar=True)
+        self.log('valid/legacy_psnr', legacy_psnr, prog_bar=True)
         self.log('valid/ssim', ssim, prog_bar=True)
 
     def validation_epoch_end(self, outputs) -> None:

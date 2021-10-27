@@ -43,7 +43,8 @@ def get_model_args(config):
 def load_config_from_args():
     # thouh we have template for each models, still you can add any options through belowing code
     args = argparse.ArgumentParser()
-    args.add_argument("-c", "--config", required=True, help="You can see the sample yaml template in /config folder.")
+    args.add_argument("-c", "--config", type=str, help="You can see the sample yaml template in /config folder.")
+    args.add_argument("-m", "--model", type=str, help="Model for training")
     args.add_argument("-n", "--name", type=str, help="You can put the name for the experiment, this will be used for log file name.")
     args.add_argument("-p", "--patch", type=int, help="Patch size for data loader crop and model generation.")
     args.add_argument("-b", "--batch", type=int, help="Batch size for data laoder.")
@@ -54,9 +55,15 @@ def load_config_from_args():
     args.add_argument("--save_imgs", action='store_true', help='set this option to test the model')
     args = args.parse_args(sys.argv[1:])
     
+    if args.config is None:
+        args.config = "config/base_template.yaml"
+
     config = load_config(args.config)
     config.log.name = args.name
     config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
+
+    if args.model is not None:
+        config.model.name == args.model
 
     config = get_model_args(config)
 

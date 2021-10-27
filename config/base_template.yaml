@@ -8,9 +8,9 @@ dataset:
   test_data: ['Set5', 'Set14', 'BSD100', 'Urban100']        # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: True
   test_only: True
-  batch_size: 12
+  batch_size: 4
   shuffle: True
-  num_workers: 16
+  num_workers: 4
   args:
     dir: "dataset"
     patch_size: 96
@@ -20,14 +20,8 @@ dataset:
 model:
   net: 'HAN'
   pretrain: False       
-  n_resgroups: 10
-  n_resblocks: 20
-  n_feats: 64
-  reduction: 16
-  n_colors: 3
-  res_scale: 1
 
-trainer:                        # pytorch lightning trainer options https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-flags           
+trainer:                                 # pytorch lightning trainer options https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-flags           
   gpus: 1
   max_epochs: 250
   accumulate_grad_batches: 2
@@ -47,7 +41,7 @@ optimizer:
   name: 'adam'
   learning_rate: 1.0e-4
   weight_decay: 5.0e-2
-  momentum: 0.9               # only work for SGD
+  momentum: 0.9                         # only work for SGD
 
 scheduler:
   name: 'multistep'
