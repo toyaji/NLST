@@ -6,7 +6,8 @@ import torch
 import pytorch_lightning as pl
 from torch import Tensor
 from torch.nn import functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim import Adam, AdamW, SGD
+from torch.optim.lr_scheduler import ReduceLROnPlateau, MultiStepLR
 from pytorch_lightning.metrics.functional import ssim as _ssim
 from torchmetrics import SSIM, PSNR
 from importlib import import_module
@@ -15,7 +16,7 @@ from importlib import import_module
 CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 4500, }
 
 class LitModel(pl.LightningModule):
-    def __init__(self, model_params, opt_params, data_params) -> None:
+    def __init__(self, model_params, opt_params, sch_params, data_params) -> None:
         super().__init__()
 
         # set opt params
@@ -24,12 +25,8 @@ class LitModel(pl.LightningModule):
         self.rgb_range = model_params.rgb_range
         self.chop_size = CHOP_SIZE[self.name] if model_params.chop_size is None else model_params.chop_size
 
-        self.lr = opt_params.learning_rate
-        self.min_lr = opt_params.min_lr
-        self.weight_decay = opt_params.weight_decay
-        self.patience = opt_params.patience
-        self.cooldown = opt_params.cooldown
-        self.factor = opt_params.factor
+        self.opt_params = opt_params
+        self.sch_params = sch_params
 
         self.test_data = data_params.test_data
         self.save_test_img = data_params.save_test_img
@@ -54,6 +51,9 @@ class LitModel(pl.LightningModule):
         # save hprams for log
         self.save_hyperparameters(model_params)
         self.save_hyperparameters(opt_params)
+
+        # loss
+        self.loss = F.l1_loss
 
         # metrics
         self.val_psnr = PSNR()
@@ -102,10 +102,23 @@ class LitModel(pl.LightningModule):
         return output
 
     def configure_optimizers(self):
-        optimazier = torch.optim.AdamW(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
-        lr_scheduler = {
-            'scheduler': ReduceLROnPlateau(optimazier, factor=self.factor, patience=self.patience,
+        if self.opt_params.name == 'adam':
+            optimazier = Adam(self.parameters(), lr=self.opt_params.learning_rate)
+        elif self.opt_params.name == 'adamw':
+            optimazier = AdamW(self.parameters(), lr=self.opt_params.learning_rate, 
+                               weight_decay=self.opt_params.weight_decay)
+        else:
+            optimazier = SGD(self.parameters(), lr=self.opt_params.learning_rate, 
+                             momentum=self.opt_params.momentum, weight_decay=self.opt_params.weight_decay)
+
+        if self.sch_params.name == 'multistep':
+            scheduler = MultiStepLR(optimazier, milestones=self.sch_params.multistep, gamma=self.sch_params.factor)
+        else:
+            scheduler = ReduceLROnPlateau(optimazier, factor=self.factor, patience=self.patience,
                                            cooldown=self.cooldown, min_lr=self.min_lr),
+        
+        lr_scheduler = {
+            'scheduler': scheduler,
             'monitor': "valid/loss",
             'name': 'leraning_rate'
         }
@@ -114,14 +127,14 @@ class LitModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y, _ = batch
         sr = self(x)
-        loss = F.mse_loss(sr, y)
+        loss = self.loss(sr, y)
         self.log('train/loss', loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y, _ = batch
         sr = self(x)
-        loss = F.mse_loss(sr, y)
+        loss = self.loss(sr, y)
         sr = self._quantize(sr, self.rgb_range)
         sr, y = self.rgb2ycbcr(sr, y, scale=self.scale, rgb_range=self.rgb_range)
         psnr = self.val_psnr(sr, y)

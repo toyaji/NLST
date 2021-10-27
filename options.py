@@ -11,6 +11,35 @@ def load_config(config_file):
         config = EasyDict(config)
     return config
 
+def get_model_args(config):
+    model = config.model.net
+    if model == "HAN":
+        config.model.n_resgroups = 10
+        config.model.n_resblocks = 20
+        config.model.n_feats = 64
+        config.model.reduction = 16
+        config.model.n_colors = 3
+        config.model.res_scale = 1
+
+    elif model == "CSNLN":
+        config.model.depth = 12
+        config.model.n_resblocks = 16
+        config.model.n_feats = 128
+        config.model.n_colors = 3
+
+    elif model == "SwinIR":
+          config.model.img_size = 96
+          config.model.window_size = 8
+          config.model.embed_dim = 180
+          config.model.depths = [6, 6, 6, 6, 6]
+          config.model.num_heads = [6, 6, 6, 6, 6]
+          config.model.n_colors = 3
+          config.model.mlp_ratio = 2
+          config.model.upsampler = 'pixelshuffle'
+          config.model.resi_connection = '1conv'
+
+    return config
+
 def load_config_from_args():
     # thouh we have template for each models, still you can add any options through belowing code
     args = argparse.ArgumentParser()
@@ -28,6 +57,8 @@ def load_config_from_args():
     config = load_config(args.config)
     config.log.name = args.name
     config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
+
+    config = get_model_args(config)
 
     if args.patch is not None:
         config.dataset.args.patch_size = args.patch
