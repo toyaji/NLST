@@ -28,7 +28,7 @@ def get_model_args(config):
         config.model.n_colors = 3
 
     elif model == "SwinIR":
-          config.model.img_size = 96
+          config.model.img_size = config.dataset.args.patch_size
           config.model.window_size = 8
           config.model.embed_dim = 180
           config.model.depths = [6, 6, 6, 6, 6]
@@ -63,9 +63,7 @@ def load_config_from_args():
     config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
 
     if args.model is not None:
-        config.model.name == args.model
-
-    config = get_model_args(config)
+        config.model.net == args.model
 
     if args.patch is not None:
         config.dataset.args.patch_size = args.patch
@@ -75,6 +73,8 @@ def load_config_from_args():
 
     if args.workers is not None:
         config.dataset.num_workers = args.workers
+
+    config = get_model_args(config)
 
     config.dataset.test_only = args.test_only
     config.dataset.save_test_img = args.save_imgs
