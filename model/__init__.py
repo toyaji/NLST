@@ -53,7 +53,12 @@ class LitModel(pl.LightningModule):
         self.save_hyperparameters(opt_params)
 
         # loss
-        self.loss = F.l1_loss
+        if model_params.loss == 'l1':
+            self.loss = F.l1_loss
+        elif model_params.loss == 'l2':
+            self.loss = F.mse_loss
+        elif model_params.loss == 'cosine':
+            self.loss = F.cosine_similarity
 
         # metrics
         self.val_psnr = PSNR()
