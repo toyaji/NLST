@@ -8,7 +8,7 @@ dataset:
   test_data: ['Set5', 'Set14']        # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: True
   test_only: True
-  batch_size: 4
+  batch_size: 2
   shuffle: True
   num_workers: 4
   args:
@@ -30,7 +30,7 @@ trainer:                                 # pytorch lightning trainer options htt
   log_gpu_memory: "all"
   #limit_val_batches: 0.5
   #profiler: "pytorch"
-  resume_from_checkpoint: 'logs\han_x2_test\log_2110271017\checkpoints\epoch=4-step=499.ckpt'
+  #resume_from_checkpoint: 'logs\han_x2_test\log_2110271017\checkpoints\epoch=4-step=499.ckpt'
   #fast_dev_run: 1              
 
 callback:
