@@ -21,6 +21,15 @@ def get_model_args(config):
         config.model.n_colors = 3
         config.model.res_scale = 1
 
+    elif model == "SCAN":
+        config.model.n_resgroups = 10
+        config.model.n_resblocks = 10
+        config.model.n_feats = 64
+        config.model.channels = [128, 256, 512, 512]
+        config.model.reduction = [2, 4, 8, 8]
+        config.model.n_colors = 3
+        config.model.res_scale = 1
+
     elif model == "CSNLN":
         config.model.depth = 12
         config.model.n_resblocks = 16
@@ -63,7 +72,13 @@ def load_config_from_args():
     config.log.version = 'log_' + datetime.now().strftime("%y%m%d%H%M")
 
     if args.model is not None:
+<<<<<<< HEAD
         config.model.net == args.model
+=======
+        config.model.net = args.model
+
+    config = get_model_args(config)
+>>>>>>> 6621b1cce1a77500436182a6e00105fd48df6fd7
 
     if args.patch is not None:
         config.dataset.args.patch_size = args.patch

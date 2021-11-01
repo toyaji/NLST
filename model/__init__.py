@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from torch import Tensor
 from torch.nn import functional as F
 from torch.optim import Adam, AdamW, SGD
-from torch.optim.lr_scheduler import ReduceLROnPlateau, MultiStepLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau, MultiStepLR
 from pytorch_lightning.metrics.functional import ssim as _ssim
 from torchmetrics import SSIM, PSNR
 from importlib import import_module
@@ -53,7 +53,12 @@ class LitModel(pl.LightningModule):
         self.save_hyperparameters(opt_params)
 
         # loss
-        self.loss = F.l1_loss
+        if model_params.loss == 'l1':
+            self.loss = F.l1_loss
+        elif model_params.loss == 'l2':
+            self.loss = F.mse_loss
+        elif model_params.loss == 'cosine':
+            self.loss = F.cosine_similarity
 
         # metrics
         self.val_psnr = PSNR()
@@ -103,18 +108,20 @@ class LitModel(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.opt_params.name == 'adam':
-            optimazier = Adam(self.parameters(), lr=self.opt_params.learning_rate)
+            optimizer = Adam(self.parameters(), lr=self.opt_params.learning_rate)
         elif self.opt_params.name == 'adamw':
-            optimazier = AdamW(self.parameters(), lr=self.opt_params.learning_rate, 
+            optimizer = AdamW(self.parameters(), lr=self.opt_params.learning_rate, 
                                weight_decay=self.opt_params.weight_decay)
         else:
-            optimazier = SGD(self.parameters(), lr=self.opt_params.learning_rate, 
+            optimizer = SGD(self.parameters(), lr=self.opt_params.learning_rate, 
                              momentum=self.opt_params.momentum, weight_decay=self.opt_params.weight_decay)
 
         if self.sch_params.name == 'multistep':
-            scheduler = MultiStepLR(optimazier, milestones=self.sch_params.multistep, gamma=self.sch_params.factor)
+            scheduler = MultiStepLR(optimizer, milestones=self.sch_params.multistep, gamma=self.sch_params.factor)
+        elif self.sch_params.name == 'cosine':
+            scheduler = CosineAnnealingLR(optimizer, T_max=10, eta_min=1.0e-10)
         else:
-            scheduler = ReduceLROnPlateau(optimazier, factor=self.factor, patience=self.patience,
+            scheduler = ReduceLROnPlateau(optimizer, factor=self.factor, patience=self.patience,
                                            cooldown=self.cooldown, min_lr=self.min_lr),
         
         lr_scheduler = {
@@ -122,7 +129,7 @@ class LitModel(pl.LightningModule):
             'monitor': "valid/loss",
             'name': 'leraning_rate'
         }
-        return [optimazier], [lr_scheduler]
+        return [optimizer], [lr_scheduler]
 
     def training_step(self, batch, batch_idx):
         x, y, _ = batch
