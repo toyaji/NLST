@@ -5,33 +5,22 @@ log:
 
 dataset:
   train_data: ["DIV2K", ]                                   # DIV2K, BSD500, ...
-<<<<<<< HEAD
   test_data: ['Set5', 'Set14', 'BSD100', 'Urban100']        # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
-  batch_size: 6
-=======
-  test_data: ['Set5', 'Set14']        # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
-  save_test_img: True
-  test_only: True
-  batch_size: 2
->>>>>>> 6621b1cce1a77500436182a6e00105fd48df6fd7
+  batch_size: 10
   shuffle: True
-  num_workers: 12
+  num_workers: 16
   args:
     dir: "dataset"
     patch_size: 96
     scale: 2
-    rgb_range: 255                         # HAN, SwinIR pretrained as of 255, others as of 1
+    rgb_range: 1                         # HAN, SwinIR pretrained as of 255, others as of 1
 
 model:
   net: 'HAN'
-<<<<<<< HEAD
-  pretrain: True      
-=======
   pretrain: False
   loss: 'l1'       
->>>>>>> 6621b1cce1a77500436182a6e00105fd48df6fd7
 
 trainer:                                 # pytorch lightning trainer options https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-flags           
   gpus: 1
@@ -50,7 +39,7 @@ callback:
   min_delta: 1.0e-4
 
 optimizer:
-  name: 'adam'
+  name: 'adamw'
   learning_rate: 1.0e-4
   weight_decay: 5.0e-2
   momentum: 0.9                         # only work for SGD
