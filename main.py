@@ -18,13 +18,16 @@ def main(config):
     # load pytorch lightning model
     model = LitModel(config.model, config.optimizer, config.scheduler, config.dataset)
 
+    #if config.model.from_ckpt is not None:
+    #    model = LitModel.load_from_checkpoint(config.model.from_ckpt)
+
     # instantiate trainer
     logger = TensorBoardLogger('logs/', **config.log)
 
     if config.log.log_graph:
         logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
-    checkpoint_callback = ModelCheckpoint(monitor="valid/legacy_psnr", save_top_k=config.callback.save_top_k, mode='max')
+    checkpoint_callback = ModelCheckpoint(monitor="valid/loss", save_top_k=config.callback.save_top_k, mode='min')
     early_stop_callback = EarlyStopping(monitor="valid/loss", 
                                         patience=config.callback.earlly_stop_patience, 
                                         min_delta=config.callback.min_delta)
