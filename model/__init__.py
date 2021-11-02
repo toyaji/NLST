@@ -13,7 +13,7 @@ from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
 # You can adjust following chop size fit to your GPU memory.
-CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 4500, }
+CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 4500, "SCAN" : 160000, }
 
 class LitModel(pl.LightningModule):
     def __init__(self, model_params, opt_params, sch_params, data_params) -> None:
@@ -119,7 +119,7 @@ class LitModel(pl.LightningModule):
         if self.sch_params.name == 'multistep':
             scheduler = MultiStepLR(optimizer, milestones=self.sch_params.multistep, gamma=self.sch_params.factor)
         elif self.sch_params.name == 'cosine':
-            scheduler = CosineAnnealingLR(optimizer, T_max=10, eta_min=1.0e-10)
+            scheduler = CosineAnnealingLR(optimizer, T_max=10, eta_min=1.0e-9)
         else:
             scheduler = ReduceLROnPlateau(optimizer, factor=self.factor, patience=self.patience,
                                            cooldown=self.cooldown, min_lr=self.min_lr),
