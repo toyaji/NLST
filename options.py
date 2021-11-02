@@ -23,7 +23,7 @@ def get_model_args(config):
 
     elif model == "SCAN":
         config.model.n_resgroups = 10
-        config.model.n_resblocks = 10
+        config.model.n_resblocks = 8
         config.model.n_feats = 64
         config.model.channels = [128, 256, 512, 512]
         config.model.reduction = [2, 4, 8, 8]
@@ -74,8 +74,6 @@ def load_config_from_args():
     if args.model is not None:
         config.model.net = args.model
 
-    config = get_model_args(config)
-
     if args.patch is not None:
         config.dataset.args.patch_size = args.patch
 
@@ -84,12 +82,15 @@ def load_config_from_args():
 
     if args.workers is not None:
         config.dataset.num_workers = args.workers
+    
+    config.test_only = args.test_only
+
+    if args.save_imgs:
+        config.dataset.save_test_img = True
+
+    config.model.chop_size = args.chop_size
 
     config = get_model_args(config)
-
-    config.dataset.test_only = args.test_only
-    config.dataset.save_test_img = args.save_imgs
-    config.model.chop_size = args.chop_size
 
     # rgb range set copy to model param
     config.model.rgb_range = config.dataset.args.rgb_range
