@@ -36,7 +36,7 @@ def main(config):
                       )
     
     # start training!
-    if not config.dataset.test_only:
+    if not config.test_only:
         trainer.fit(model, dm)
     
     trainer.test(model, datamodule=dm)
