@@ -162,7 +162,7 @@ class CSAM_Module(nn.Module):
         out = out.view(m_batchsize, -1, height, width)
         x = x * out + x
         return x
-        
+
 ## Residual Channel Attention Block (RCAB)
 class RCAB(nn.Module):
     def __init__(
@@ -219,7 +219,7 @@ class SCAN(nn.Module):
         reduction = args.reduction 
         scale = args.scale
         
-        extractor = VGG19(requires_grad=True)
+        extractor = VGG19(requires_grad=args.extractor_train)
         act = nn.GELU()
         
         # RGB mean for DIV2K

@@ -29,6 +29,7 @@ def get_model_args(config):
         config.model.reduction = [2, 4, 8, 8]
         config.model.n_colors = 3
         config.model.res_scale = 1
+        config.model.extractor_train = True
 
     elif model == "CSNLN":
         config.model.depth = 12
