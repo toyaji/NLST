@@ -31,6 +31,17 @@ def get_model_args(config):
         config.model.res_scale = 1
         config.model.extractor_train = True
 
+    elif model == "NONSCAN":
+        config.model.img_size = config.dataset.args.patch_size
+        config.model.n_strablocks = 5
+        config.model.n_stratum = 5
+        config.model.n_feats = 64
+        config.model.channels = [32, 32, 32, 32]
+        config.model.reduction = [2, 4, 8, 16]
+        config.model.n_colors = 3
+        config.model.res_scale = 1
+        config.model.concat = True
+
     elif model == "CSNLN":
         config.model.depth = 12
         config.model.n_resblocks = 16
