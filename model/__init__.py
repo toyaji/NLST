@@ -67,15 +67,21 @@ class LitModel(pl.LightningModule):
     def forward(self, x):
         return self.model(x)
 
-    def forward_chop(self, x, shave=10, min_size=160000):
+    def forward_chop(self, x, auto_shave=True, shave_feed=16, shave=(10, 10), min_size=160000):
         # it work for only batch size of 1
         scale = self.scale
+        h_shave, w_shave = shave
         b, c, h, w = x.size()
         h_half, w_half = h // 2, w // 2
-        h_size, w_size = h_half + shave, w_half + shave
-        # consider odd size
-        h_size += scale-h_size%scale
-        w_size += scale-w_size%scale
+
+        if auto_shave:
+            h_shave = (round(h_half / shave_feed) + 1) * shave_feed - h_half
+            w_shave = (round(w_half / shave_feed) + 1) * shave_feed - w_half
+
+        h_size, w_size = h_half + h_shave, w_half + w_shave
+
+        #print("Size of sliced input: ", h_shave, w_shave)
+
         lr_list = [
             x[:, :, 0:h_size, 0:w_size],
             x[:, :, 0:h_size, (w - w_size):w],
@@ -87,7 +93,7 @@ class LitModel(pl.LightningModule):
             sr_batch = self.model(lr_batch)
         else:
             sr_batch = torch.cat([
-                self.forward_chop(patch, shave=shave, min_size=min_size) \
+                self.forward_chop(patch, min_size=min_size) \
                 for patch in lr_list
             ], dim=0)
 
