@@ -194,7 +194,7 @@ class NLST(nn.Module):
         n_feats = args.n_feats
         img_size = args.img_size
         kernel_size = 3
-        channels = args.channels
+        work_dim = args.work_dim
         reduction = args.reduction 
         scale = args.scale
         concat = args.concat
@@ -209,7 +209,7 @@ class NLST(nn.Module):
 
         # define body module
         modules_body = [
-            StrataAttentionModul(n_stratum, img_size, n_feats, channels, reduction, concat) for _ in range(n_strablocks)]
+            StrataAttentionModul(n_stratum, img_size, n_feats, work_dim, reduction, concat) for _ in range(n_strablocks)]
 
         modules_body.append(conv(n_feats, n_feats, kernel_size))
 
