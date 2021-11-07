@@ -7,9 +7,6 @@ from model import common
 
 #in-scale non-local attention
 class NonLocalAttention(nn.Module):
-    """
-    TODO 정상적으로 작동 하는지 확인하기 
-    """
     def __init__(self, channel=128, reduction=2, ksize=3, scale=3, stride=1, softmax_scale=10, average=True, conv=common.default_conv):
         super(NonLocalAttention, self).__init__()
 
@@ -69,7 +66,7 @@ class StratumBlock(nn.Module):
 
 class StrataAttentionModul(nn.Module):
     """ Residual Strata Block """
-    def __init__(self, n_strata, in_size=96, in_dim=64, work_dim=64, reduction=[2, 4, 8, 16], concat=False):
+    def __init__(self, n_strata, in_dim=64, work_dim=64, reduction=[2, 4, 8, 16], concat=False):
         super().__init__()
 
         ch = work_dim
@@ -81,7 +78,7 @@ class StrataAttentionModul(nn.Module):
         for i, r in enumerate(reduction[::-1]):
             # Create strata accoding to given channel and reduction list length
             self.strata_head.append(
-                nn.Sequential(nn.AdaptiveAvgPool2d(in_size // r),
+                nn.Sequential(*[nn.AvgPool2d(6, 2, 2)] * int(math.log2(r)),
                               nn.Conv2d(in_dim, ch, 1, padding=0, bias=True), 
                               nn.GELU())
                 )
@@ -92,7 +89,7 @@ class StrataAttentionModul(nn.Module):
                 )
         
         self.merge_conv = nn.Sequential(
-            nn.Conv2d(ch*4, in_dim, 3, 1, 1),
+            nn.Conv2d(ch*len(reduction), in_dim, 3, 1, 1),
             nn.GELU()
         )
 
@@ -192,7 +189,6 @@ class NLST(nn.Module):
         n_strablocks = args.n_strablocks
         n_stratum = args.n_stratum
         n_feats = args.n_feats
-        img_size = args.img_size
         kernel_size = 3
         work_dim = args.work_dim
         reduction = args.reduction 
@@ -209,7 +205,7 @@ class NLST(nn.Module):
 
         # define body module
         modules_body = [
-            StrataAttentionModul(n_stratum, img_size, n_feats, work_dim, reduction, concat) for _ in range(n_strablocks)]
+            StrataAttentionModul(n_stratum, n_feats, work_dim, reduction, concat) for _ in range(n_strablocks)]
 
         modules_body.append(conv(n_feats, n_feats, kernel_size))
 
