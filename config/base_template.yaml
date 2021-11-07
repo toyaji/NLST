@@ -4,13 +4,13 @@ log:
   log_graph: False
 
 dataset:
-  train_data: ['DIV2K', 'Flickr2K', 'BSD500']                 # DIV2K, Flickr2K, BSD500, ...
+  train_data: ['DIV2K', 'Flickr2K']                 # DIV2K, Flickr2K, BSD500, ...
   test_data: ['Set5', 'Set14', ]                              # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
   save_test_img: False
   test_only: False
-  batch_size: 8
+  batch_size: 3
   shuffle: True
-  num_workers: 16
+  num_workers: 5
   args:
     dir: "dataset"
     patch_size: 96
@@ -25,12 +25,12 @@ model:
 trainer:                                 # pytorch lightning trainer options https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-flags           
   gpus: 1
   max_epochs: 600
-  accumulate_grad_batches: 2
+  accumulate_grad_batches: 6
   gradient_clip_val: 0.5
   log_gpu_memory: "all"
   #limit_val_batches: 0.5
   #profiler: "pytorch"
-  resume_from_checkpoint: 'logs\nonscan_x2_test\log_2111051725\checkpoints\epoch=14-step=1499.ckpt'
+  #resume_from_checkpoint: 'logs\nonscan_x2_test\log_2111051725\checkpoints\epoch=14-step=1499.ckpt'
   #fast_dev_run: 1              
 
 callback:
