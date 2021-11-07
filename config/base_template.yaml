@@ -30,7 +30,7 @@ trainer:                                 # pytorch lightning trainer options htt
   log_gpu_memory: "all"
   #limit_val_batches: 0.5
   #profiler: "pytorch"
-  #resume_from_checkpoint: 'logs\nonscan_x2_test\log_2111051725\checkpoints\epoch=14-step=1499.ckpt'
+  resume_from_checkpoint: 'logs/nonscan_2x_10block5attn/log_2111071414/checkpoints/epoch=15-step=3503.ckpt'
   #fast_dev_run: 1              
 
 callback:
