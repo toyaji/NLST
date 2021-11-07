@@ -1,12 +1,8 @@
 import warnings
-from pathlib import Path
-
 import torch
-from torch.utils.data.dataset import random_split
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
-
 
 from model import LitModel
 from data import LitDataset
@@ -20,7 +16,10 @@ def main(config):
     dm = LitDataset(**config.dataset)
 
     # load pytorch lightning model
-    model = LitModel(config.model, config.optimizer)
+    model = LitModel(config.model, config.optimizer, config.scheduler, config.dataset)
+
+    #if config.model.from_ckpt is not None:
+    #    model = LitModel.load_from_checkpoint(config.model.from_ckpt)
 
     # instantiate trainer
     logger = TensorBoardLogger('logs/', **config.log)
@@ -28,13 +27,11 @@ def main(config):
     if config.log.log_graph:
         logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
-    # callbacks
-    checkpoint_callback = ModelCheckpoint(monitor="valid_loss", save_top_k=3)
-    early_stop_callback = EarlyStopping(monitor="valid_loss", patience=15)
+    checkpoint_callback = ModelCheckpoint(monitor="valid/loss", save_top_k=config.callback.save_top_k, mode='min')
+    early_stop_callback = EarlyStopping(monitor="valid/loss", 
+                                        patience=config.callback.earlly_stop_patience, 
+                                        min_delta=config.callback.min_delta)
     lr_callback = LearningRateMonitor(logging_interval='epoch')
-    
-    # profiling for memory usage
-    #profiler=PyTorchProfiler(sort_by_key="cuda_memory_usage")
 
     trainer = Trainer(logger=logger, 
                       callbacks=[checkpoint_callback, early_stop_callback, lr_callback], 
@@ -42,8 +39,10 @@ def main(config):
                       )
     
     # start training!
-    trainer.fit(model, dm)
-    trainer.test(datamodule=dm)
+    if not config.test_only:
+        trainer.fit(model, dm)
+    
+    trainer.test(model, datamodule=dm)
 
     
 if __name__ == "__main__":

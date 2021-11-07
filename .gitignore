@@ -4,9 +4,14 @@
 
 # Dataset
 /dataset
+/results
 
 # Test files
 *test.*
+
+# Pretrain files
+**/*.pt
+**/*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

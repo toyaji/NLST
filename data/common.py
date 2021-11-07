@@ -9,23 +9,31 @@ import torch.nn as nn
 
 
 
-def get_raw_patch(hr, lr, patch_size):
-    """Get patches of same fov from all scales of images"""
-    # FIXME TODO  여기부터 고쳐야함. 전혀 안돌아감
-    ih1, iw1 = hr.shape[:2]
-    ih2, iw2  =lr.shape[:2]
+def get_patch(*args, patch_size=96, scale=2, input_large=False):
+    ih, iw = args[0].shape[:2]
 
-    tp = patch_size
-    ix = np.random.randint(0, iw1 - patch_size)
-    iy = np.random.randint(0, ih1 - patch_size)
+    if not input_large:
+        p = scale
+        tp = p * patch_size
+        ip = tp // scale
+    else:
+        tp = patch_size
+        ip = patch_size
 
-    lp = patch_size * ih2 / ih1
-    ix = np.random.randint(0, iw1 - patch_size)
-    iy = np.random.randint(0, ih1 - patch_size)
-    
-    hr = hr[iy:iy + tp, ix:ix + tp, :]
-    lr = lr[iy:iy + tp, ix:ix + tp, :]
-    return hr, lr
+    ix = random.randrange(0, iw - ip + 1)
+    iy = random.randrange(0, ih - ip + 1)
+
+    if not input_large:
+        tx, ty = scale * ix, scale * iy
+    else:
+        tx, ty = ix, iy
+
+    ret = [
+        args[0][iy:iy + ip, ix:ix + ip, :],
+        *[a[ty:ty + tp, tx:tx + tp, :] for a in args[1:]]
+    ]
+
+    return ret
 
 def get_random_patch(hr, lr, patch_size):
     # some input images have little bit different size so we need to consider that
@@ -51,22 +59,22 @@ def get_random_patches(hr, lrs, patch_size):
         lrs[i] = l
     return hrs, lrs
 
-def set_channel(l, n_channel):
+def set_channel(*args, n_channels=3):
     def _set_channel(img):
         if img.ndim == 2:
             img = np.expand_dims(img, axis=2)
 
         c = img.shape[2]
-        if n_channel == 1 and c == 3:
+        if n_channels == 1 and c == 3:
             img = np.expand_dims(sc.rgb2ycbcr(img)[:, :, 0], 2)
-        elif n_channel == 3 and c == 1:
-            img = np.concatenate([img] * n_channel, 2)
-
+        elif n_channels == 3 and c == 1:
+            img = np.concatenate([img] * n_channels, 2)
         return img
 
-    return [_set_channel(_l) for _l in l]
+    return [_set_channel(a) for a in args]
 
-def np2Tensor(l, rgb_range):
+def np2Tensor(*args, rgb_range=255):
+    # FIXME it has problem, but precedent researchs used this code...
     def _np2Tensor(img):
         np_transpose = np.ascontiguousarray(img.transpose((2, 0, 1)))
         tensor = torch.from_numpy(np_transpose).float()
@@ -74,7 +82,7 @@ def np2Tensor(l, rgb_range):
 
         return tensor
 
-    return [_np2Tensor(_l) for _l in l]
+    return [_np2Tensor(a) for a in args]
 
 def add_noise(x, noise='.'):
     if noise != '.':
@@ -93,7 +101,7 @@ def add_noise(x, noise='.'):
     else:
         return x
 
-def augment(l, hflip=True, rot=True):
+def augment(*args, hflip=True, rot=True):
     hflip = hflip and random.random() < 0.5
     vflip = rot and random.random() < 0.5
     rot90 = rot and random.random() < 0.5
@@ -105,7 +113,7 @@ def augment(l, hflip=True, rot=True):
         
         return img
 
-    return [_augment(_l) for _l in l]
+    return [_augment(a) for a in args]
 
 def readFocal_pil(image_path, focal_code=37386):
     if isinstance(image_path, Path):
