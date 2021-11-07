@@ -10,7 +10,7 @@ class Flickr2K(SRData):
     def _scan(self):
         if self.train:
             self.hr_pathes = sorted(list(self.dir_hr.glob("*")))[:2500]
-            self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*")))[:2500]
+            self.lr_pathes = sorted(list((self.dir_lr / "x{:1d}".format(self.scale)).glob("*")))[:2500]
         else:
             self.hr_pathes = sorted(list(self.dir_hr.glob("*")))[2500:]
-            self.lr_pathes = sorted(list((self.dir_lr / "X{:1d}".format(self.scale)).glob("*")))[2500:] 
+            self.lr_pathes = sorted(list((self.dir_lr / "x{:1d}".format(self.scale)).glob("*")))[2500:] 
