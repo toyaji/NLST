@@ -57,10 +57,6 @@ class StratumBlock(nn.Module):
                 c.append(res)
             res = stra_unit(res)
 
-        if self.concat:
-            res = torch.cat(c, dim=1)
-            res = self.merge(res)
-
         return x + res
 
 
@@ -78,9 +74,10 @@ class StrataAttentionModul(nn.Module):
         for i, r in enumerate(reduction[::-1]):
             # Create strata accoding to given channel and reduction list length
             self.strata_head.append(
-                nn.Sequential(*[nn.AvgPool2d(6, 2, 2)] * int(math.log2(r)),
-                              nn.Conv2d(in_dim, ch, 1, padding=0, bias=True), 
-                              nn.GELU())
+                nn.Sequential(nn.Conv2d(in_dim, ch, 1, padding=0, bias=True), 
+                              nn.GELU(),
+                              *[nn.Conv2d(ch, ch, 6, 2, 2), nn.GELU()] * int(math.log2(r))
+                              )
                 )
             self.strata_body.append(StratumBlock(ch, n_strata, concat))
             
@@ -109,76 +106,6 @@ class StrataAttentionModul(nn.Module):
         res = self.merge_conv(res)
 
         return x + res
-        
-class LAM_Module(nn.Module):
-    """ Layer attention module"""
-    def __init__(self, in_dim):
-        super(LAM_Module, self).__init__()
-        self.chanel_in = in_dim
-        self.gamma = nn.Parameter(torch.zeros(1))
-        self.softmax  = nn.Softmax(dim=-1)
-
-    def forward(self,x):
-        """
-            inputs :
-                x : input feature maps( B X N X C X H X W)
-            returns :
-                out : attention value + input feature
-                attention: B X N X N
-        """
-        m_batchsize, N, C, height, width = x.size()
-        proj_query = x.view(m_batchsize, N, -1)
-        proj_key = x.view(m_batchsize, N, -1).permute(0, 2, 1)
-        energy = torch.bmm(proj_query, proj_key)
-        energy_new = torch.max(energy, -1, keepdim=True)[0].expand_as(energy)-energy
-        attention = self.softmax(energy_new)
-
-        proj_value = x.view(m_batchsize, N, -1)
-        out = torch.bmm(attention, proj_value)
-        out = out.view(m_batchsize, N, C, height, width)
-
-        out = self.gamma*out + x
-        out = out.view(m_batchsize, -1, height, width)
-        return out
-
-class CSAM_Module(nn.Module):
-    """ Channel-Spatial attention module"""
-    def __init__(self, in_dim):
-        super(CSAM_Module, self).__init__()
-        self.chanel_in = in_dim
-
-
-        self.conv = nn.Conv3d(1, 1, 3, 1, 1)
-        self.gamma = nn.Parameter(torch.zeros(1))
-        #self.softmax  = nn.Softmax(dim=-1)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self,x):
-        """
-            inputs :
-                x : input feature maps( B X N X C X H X W)
-            returns :
-                out : attention value + input feature
-                attention: B X N X N
-        """
-        m_batchsize, C, height, width = x.size()
-        out = x.unsqueeze(1)  # B X 1 X C X H X W
-        out = self.sigmoid(self.conv(out))
-        
-        # proj_query = x.view(m_batchsize, N, -1)
-        # proj_key = x.view(m_batchsize, N, -1).permute(0, 2, 1)
-        # energy = torch.bmm(proj_query, proj_key)
-        # energy_new = torch.max(energy, -1, keepdim=True)[0].expand_as(energy)-energy
-        # attention = self.softmax(energy_new)
-        # proj_value = x.view(m_batchsize, N, -1)
-
-        # out = torch.bmm(attention, proj_value)
-        # out = out.view(m_batchsize, N, C, height, width)
-
-        out = self.gamma*out
-        out = out.view(m_batchsize, -1, height, width)
-        x = x * out + x
-        return x
 
 
 ## Non-local Strata Transformer Network (NLSTN)
@@ -186,7 +113,7 @@ class NLST(nn.Module):
     def __init__(self, args, conv=common.default_conv):
         super(NLST, self).__init__()
         
-        n_strablocks = args.n_strablocks
+        self.n_strablocks = args.n_strablocks
         n_stratum = args.n_stratum
         n_feats = args.n_feats
         kernel_size = 3
@@ -205,7 +132,8 @@ class NLST(nn.Module):
 
         # define body module
         modules_body = [
-            StrataAttentionModul(n_stratum, n_feats, work_dim, reduction, concat) for _ in range(n_strablocks)]
+           StrataAttentionModul(n_stratum, n_feats, work_dim, reduction, concat) \
+            for _ in range(self.n_strablocks)]
 
         modules_body.append(conv(n_feats, n_feats, kernel_size))
 
@@ -218,36 +146,16 @@ class NLST(nn.Module):
 
         self.head = nn.Sequential(*modules_head)
         self.body = nn.Sequential(*modules_body)
-        self.csa = CSAM_Module(n_feats)
-        self.la = LAM_Module(n_feats)
-        self.last_conv = nn.Conv2d(n_feats*(n_strablocks + 1), n_feats, 3, 1, 1)
-        self.last = nn.Conv2d(n_feats*2, n_feats, 3, 1, 1)
         self.tail = nn.Sequential(*modules_tail)
 
     def forward(self, x):
         x = self.sub_mean(x)
         x = self.head(x)
-        res = x
 
-        for name, midlayer in self.body._modules.items():
-            res = midlayer(res)
-            if name=='0':
-                res1 = res.unsqueeze(1)
-            else:
-                res1 = torch.cat([res.unsqueeze(1),res1],1)
-
-        out1 = res
-
-        res = self.la(res1)
-        out2 = self.last_conv(res)
-
-        out1 = self.csa(out1)
-        out = torch.cat([out1, out2], 1)
-        res = self.last(out)
-        
+        res = self.body(x)
         res += x
 
         x = self.tail(res)
         x = self.add_mean(x)
-        
+
         return x 
