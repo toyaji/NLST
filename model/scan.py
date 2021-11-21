@@ -194,14 +194,12 @@ class ResidualGroup(nn.Module):
         modules_body = []
         modules_body = [
             RCAB(conv, extractor, n_feat, kernel_size, channels, reduction, bias=True, bn=False, act=act, res_scale=res_scale)
-                ]
+                for _ in range(n_resblocks)]
         modules_body.append(conv(n_feat, n_feat, kernel_size))
         self.body = nn.Sequential(*modules_body)
 
     def forward(self, x):
-        res = x 
-        for _ in range(self.n_resblocks):
-            res = self.body(res)
+        res = self.body(x)
         res += x
         return res
 

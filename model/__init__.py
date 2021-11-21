@@ -124,7 +124,7 @@ class LitModel(pl.LightningModule):
             scheduler = MultiStepLR(optimizer, milestones=self.sch_params.multistep, gamma=self.sch_params.factor)
         elif self.sch_params.name == 'cosine':
             scheduler = CosineAnnealingLR(optimizer, self.sch_params.period, eta_min=self.sch_params.min_lr)
-        else:
+        elif self.sch_params.name == 'plateau':
             scheduler = ReduceLROnPlateau(optimizer, factor=self.sch_params.factor, patience=self.sch_params.patience,
                                            cooldown=self.sch_params.cooldown, min_lr=self.sch_params.min_lr),
         

@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
-from .common import Mlp, window_partition, window_reverse
+from common import Mlp, window_partition, window_reverse
 
 
 class WindowAttention(nn.Module):
@@ -368,6 +368,8 @@ class PatchEmbed(nn.Module):
         else:
             self.norm = None
 
+            
+
     def forward(self, x):
         x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
         if self.norm is not None:
@@ -560,7 +562,6 @@ class SwinIR(nn.Module):
                          img_size=img_size,
                          patch_size=patch_size,
                          resi_connection=args.resi_connection
-
                          )
             self.layers.append(layer)
         self.norm = norm_layer(self.num_features)
@@ -635,8 +636,11 @@ class SwinIR(nn.Module):
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
 
+        print("Before main layers : ", x.size())
+
         for layer in self.layers:
             x = layer(x, x_size)
+            print("Along main layers : ", x.size())
 
         x = self.norm(x)  # B L C
         x = self.patch_unembed(x, x_size)
