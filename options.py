@@ -83,8 +83,8 @@ def load_config_from_args():
     args.add_argument("-s", "--scale", type=int, help="Scale factor.")
     args.add_argument("-w", "--workers", type=int, help="Number of worker for dataload")
     args.add_argument("--chop_size", type=int, help="For test forward, we need to chop the input according to its memory capability.")
-    args.add_argument("--test_only", action='store_true', help='set this option to test the model')
-    args.add_argument("--save_imgs", action='store_true', help='set this option to test the model')
+    args.add_argument("--test_only", type=bool, help='set this option to test the model')
+    args.add_argument("--save_imgs", type=bool, help='set this option to test the model')
     args = args.parse_args(sys.argv[1:])
     
     if args.config is None:
@@ -106,7 +106,8 @@ def load_config_from_args():
     if args.workers is not None:
         config.dataset.num_workers = args.workers
     
-    config.test_only = args.test_only
+    if args.test_only:
+        config.test_only = args.test_only
 
     if args.save_imgs:
         config.dataset.save_test_img = True
