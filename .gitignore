@@ -4,6 +4,8 @@
 
 # Dataset
 /dataset
+/results
+/pretrain
 
 # Test files
 *test.*
