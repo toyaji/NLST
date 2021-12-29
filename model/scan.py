@@ -6,26 +6,30 @@ from collections import namedtuple
 
 from model import common
 
-class VGG19(nn.Module):
-    def __init__(self, requires_grad=False):
-        super(VGG19, self).__init__()
-        vgg_pretrained_features = vgg.vgg19(pretrained=True).features
+class VGG(nn.Module):
+    def __init__(self, version='vgg13', requires_grad=False):
+        super(VGG, self).__init__()
+        vgg_pretrained_features = getattr(vgg, version)(pretrained=True).features
 
-        self.slice1 = nn.Sequential()
         self.slice2 = nn.Sequential()
         self.slice3 = nn.Sequential()
         self.slice4 = nn.Sequential()
         self.slice5 = nn.Sequential()
+        
+        idx = {
+            'vgg11' : [2, 5, 10, 15, 20],
+            'vgg13' : [4, 9, 14, 19, 24],
+            'vgg16' : [4, 9, 16, 23, 30],
+            'vgg19' : [4, 9, 18, 27, 36],
+        }[version]
 
-        for x in range(4):
-            self.slice1.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(4, 9):
+        for x in range(idx[0], idx[1]):
             self.slice2.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(9, 18):
+        for x in range(idx[1], idx[2]):
             self.slice3.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(18, 27):
+        for x in range(idx[2], idx[3]):
             self.slice4.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(27, 36):
+        for x in range(idx[3], idx[4]):
             self.slice5.add_module(str(x), vgg_pretrained_features[x])
             
         if not requires_grad:
@@ -42,20 +46,15 @@ class VGG19(nn.Module):
                                            B X 512 X H/8 X W/8,
                                            B X 512 X H/16 X W/16)
         """
-        h = self.slice2(x)   
-        h_relu2_2 = h
-        h = self.slice3(h)
-        h_relu3_4 = h
-        h = self.slice4(h)
-        h_relu4_4 = h
-        h = self.slice5(h)
-        h_relu5_4 = h
+        h2 = self.slice2(x)   
+        h3 = self.slice3(h2)
+        h4 = self.slice4(h3)
+        h5 = self.slice5(h4)
 
         vgg_outputs = namedtuple(
-            "VggOutputs", ['relu2_2',
-                           'relu3_4', 'relu4_4', 'relu5_4'])
-        out = vgg_outputs(h_relu2_2,
-                          h_relu3_4, h_relu4_4, h_relu5_4)
+            "VggOutputs", ['layer2', 'layer3', 'layer4', 'layer5'])
+
+        out = vgg_outputs(h2, h3, h4, h5)
 
         return out
 
@@ -63,7 +62,7 @@ class StackChannelAttention(nn.Module):
     def __init__(self, extractor, in_dim=64, channel=[128, 256, 512, 512], reduction=[2, 4, 8, 8]):
         super().__init__()
 
-        self.vgg = extractor
+        self.extractor = extractor
         self.avg_pool = nn.ModuleList([nn.AdaptiveAvgPool2d(1)] * 4)
         self.conv_sqeeze = nn.ModuleList()
 
@@ -82,7 +81,7 @@ class StackChannelAttention(nn.Module):
             returns :
                 out : B X C X H X W
         """
-        outs = self.vgg(x)
+        outs = self.extractor(x)
         pooled = []
         for pool, sqeeze, out in zip(self.avg_pool, self.conv_sqeeze, outs):
             pooled.append(pool(sqeeze(out)))
@@ -191,13 +190,11 @@ class ResidualGroup(nn.Module):
     def __init__(self, conv, extractor, n_feat, kernel_size, channels, reduction, act, res_scale, n_resblocks):
         super(ResidualGroup, self).__init__()
 
-        #extractor = VGG19(requires_grad=True)
-
+        self.n_resblocks = n_resblocks
         modules_body = []
         modules_body = [
-            RCAB(
-                conv, extractor, n_feat, kernel_size, channels, reduction, bias=True, bn=False, act=act, res_scale=res_scale) \
-            for _ in range(n_resblocks)]
+            RCAB(conv, extractor, n_feat, kernel_size, channels, reduction, bias=True, bn=False, act=act, res_scale=res_scale)
+                for _ in range(n_resblocks)]
         modules_body.append(conv(n_feat, n_feat, kernel_size))
         self.body = nn.Sequential(*modules_body)
 
@@ -218,8 +215,10 @@ class SCAN(nn.Module):
         channels = args.channels
         reduction = args.reduction 
         scale = args.scale
+        ext_ver = args.extractor_ver
+        ext_grad = args.extractor_grad
         
-        extractor = VGG19(requires_grad=args.extractor_train)
+        extractor = VGG(ext_ver, requires_grad=ext_grad)
         act = nn.GELU()
         
         # RGB mean for DIV2K
@@ -249,7 +248,7 @@ class SCAN(nn.Module):
         self.body = nn.Sequential(*modules_body)
         self.csa = CSAM_Module(n_feats)
         self.la = LAM_Module(n_feats)
-        self.last_conv = nn.Conv2d(n_feats*11, n_feats, 3, 1, 1)
+        self.last_conv = nn.Conv2d(n_feats*(n_resgroups + 1), n_feats, 3, 1, 1)
         self.last = nn.Conv2d(n_feats*2, n_feats, 3, 1, 1)
         self.tail = nn.Sequential(*modules_tail)
 
