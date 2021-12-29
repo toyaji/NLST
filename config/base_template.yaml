@@ -4,42 +4,52 @@ log:
   log_graph: False
 
 dataset:
-  dir: "dataset/DIV2K"
-  data: "div"                  # div, bad, zoom, zoomraw, zoompatcg
-  scale_idx: [2, 3, 4]          
-  patch_size: 64
-  batch_size: 2
-  shuffle: False
-  num_workers: 4
-  
-  # from here are zoom data args
-  get_from_dir: "cropped"      # onlycrop / cropped / aligned
-  img_ext: "JPG"               # ARW / JPG / ...
-  gray_scale: False            # TODO it does not work now for vgg layer only takes rgb channel 
-  raw_image: False             # if True, belowing in_channel param sould be 4
-  reduce_size: 0.25
+  train_data: ['DIV2K', 'Flickr2K', 'BSD500',]                 # DIV2K, Flickr2K, BSD500, ...
+  test_data: ['Set5', 'Set14', ]                              # ['Set5', 'Set14', 'BSD100', 'Urban100', 'Manga109']
+  save_test_img: False
+  test_only: False
+  batch_size: 4
+  shuffle: True
+  num_workers: 5
+  args:
+    dir: "dataset"
+    patch_size: 64                       # for NLST training, it should be a multiple of reduction size option
+    scale: 2
+    rgb_range: 1                         # HAN, SwinIR pretrained as of 255, others as of 1
 
 model:
-  net: 'NLST'                # NLST or NLRN you can 
-  in_channels: 3               # input image channel number, 3 for JPG, 4 for ARW
-  work_channels: 128           # all the layer work on the same channel number
-  filter_size: 64              # inpute filter size will be maintained along network 
-  upsample: False
-  iteration_steps: 12          # iteration step number should be same as the length of st_schedule
-  mode: "embedded"             # 'gaussian', 'embedded'(dot), 'concatenate'
-  st_schedule: "nnnnnnnnnnnn"  # 'a' means affine, 'h' for homography, 't' for tps
-  tps_grid_size: 4
+  net: 'SCAN'
+  pretrain: True
+  loss: 'l1'       
 
-trainer:                       
+trainer:                                 # pytorch lightning trainer options https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#trainer-flags           
   gpus: 1
-  max_epochs: 200
-  accumulate_grad_batches: 4
+  max_epochs: 100
+  accumulate_grad_batches: 2
   gradient_clip_val: 0.5
+  log_gpu_memory: "all"
+  #limit_val_batches: 0.5
   #profiler: "pytorch"
-  #resume_from_checkpoint: "logs/adamW07_rgb01_v2/20210914/checkpoints/epoch=98-step=6236.ckpt"
-  #fast_dev_run: 1          # This is for test - it will cause error for validation step
+  #resume_from_checkpoint: 'logs/nonscan_2x_10block5attn/log_2111071414/checkpoints/epoch=15-step=3503.ckpt'
+  #fast_dev_run: 1              
+
+callback:
+  save_top_k: 5
+  earlly_stop_patience: 20
+  min_delta: 1.0e-4
 
 optimizer:
-  learning_rate: 1.0e-5
-  weight_decay: 1.0e-2
-  patience: 5
+  name: 'adamw'
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  momentum: 0.9                         # only work for SGD
+
+scheduler:
+  name: 'multistep'
+  min_lr: 1.0e-8
+  multistep: [20, 40, 60, 80]       # work for MultiStepLR
+  patience: 10                          # work for RedcueLROnPlateau
+  cooldown: 5                           # work for RedcueLROnPlateau, skippping given epoch after one step down
+  period: 5                             # work for cosine shceduler, period of back to start lr
+  factor: 0.1                           # lr schedule decay factor
+  
