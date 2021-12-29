@@ -8,7 +8,6 @@ from torch import Tensor
 from torch.nn import functional as F
 from torch.optim import Adam, AdamW, SGD
 from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau, MultiStepLR
-from pytorch_lightning.metrics.functional import ssim as _ssim
 from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
