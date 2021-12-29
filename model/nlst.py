@@ -57,6 +57,9 @@ class StratumBlock(nn.Module):
                 c.append(res)
             res = stra_unit(res)
 
+        res = torch.cat(c, dim=1)
+        res = self.merge(res)
+        
         return x + res
 
 
