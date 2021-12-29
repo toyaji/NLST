@@ -27,7 +27,7 @@ def main(config):
     if config.log.log_graph:
         logger.log_graph(model, torch.zeros(1, 3, 64, 64).cuda())
 
-    checkpoint_callback = ModelCheckpoint(monitor="valid/loss", save_top_k=config.callback.save_top_k, mode='min')
+    checkpoint_callback = ModelCheckpoint(monitor="valid/psnr", save_top_k=config.callback.save_top_k, mode='max')
     early_stop_callback = EarlyStopping(monitor="valid/loss", 
                                         patience=config.callback.earlly_stop_patience, 
                                         min_delta=config.callback.min_delta)
