@@ -12,7 +12,7 @@ from torchmetrics import SSIM, PSNR
 from importlib import import_module
 
 # You can adjust following chop size fit to your GPU memory.
-CHOP_SIZE = {"HAN" : 160000, "CSNLN" : 4500, "NLST" : 10000, }
+CHOP_SIZE = {"HAN" : 300000, "CSNLN" : 25000, "NLST" : 10000, "SCAN": 200000}
 
 class LitModel(pl.LightningModule):
     def __init__(self, model_params, opt_params, sch_params, data_params) -> None:
